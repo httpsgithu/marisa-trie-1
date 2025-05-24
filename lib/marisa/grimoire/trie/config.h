@@ -3,17 +3,14 @@
 
 #include "marisa/base.h"
 
-namespace marisa {
-namespace grimoire {
-namespace trie {
+namespace marisa::grimoire::trie {
 
 class Config {
  public:
-  Config()
-      : num_tries_(MARISA_DEFAULT_NUM_TRIES),
-        cache_level_(MARISA_DEFAULT_CACHE),
-        tail_mode_(MARISA_DEFAULT_TAIL),
-        node_order_(MARISA_DEFAULT_ORDER) {}
+  Config() = default;
+
+  Config(const Config &) = delete;
+  Config &operator=(const Config &) = delete;
 
   void parse(int config_flags) {
     Config temp;
@@ -49,14 +46,14 @@ class Config {
   }
 
  private:
-  std::size_t num_tries_;
-  CacheLevel cache_level_;
-  TailMode tail_mode_;
-  NodeOrder node_order_;
+  std::size_t num_tries_ = MARISA_DEFAULT_NUM_TRIES;
+  CacheLevel cache_level_ = MARISA_DEFAULT_CACHE;
+  TailMode tail_mode_ = MARISA_DEFAULT_TAIL;
+  NodeOrder node_order_ = MARISA_DEFAULT_ORDER;
 
   void parse_(int config_flags) {
     MARISA_THROW_IF((config_flags & ~MARISA_CONFIG_MASK) != 0,
-        MARISA_CODE_ERROR);
+                    MARISA_CODE_ERROR);
 
     parse_num_tries(config_flags);
     parse_cache_level(config_flags);
@@ -142,14 +139,8 @@ class Config {
       }
     }
   }
-
-  // Disallows copy and assignment.
-  Config(const Config &);
-  Config &operator=(const Config &);
 };
 
-}  // namespace trie
-}  // namespace grimoire
-}  // namespace marisa
+}  // namespace marisa::grimoire::trie
 
 #endif  // MARISA_GRIMOIRE_TRIE_CONFIG_H_

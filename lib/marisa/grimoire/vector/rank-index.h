@@ -3,13 +3,11 @@
 
 #include "marisa/base.h"
 
-namespace marisa {
-namespace grimoire {
-namespace vector {
+namespace marisa::grimoire::vector {
 
 class RankIndex {
  public:
-  RankIndex() : abs_(0), rel_lo_(0), rel_hi_(0) {}
+  RankIndex() = default;
 
   void set_abs(std::size_t value) {
     MARISA_DEBUG_IF(value > MARISA_UINT32_MAX, MARISA_SIZE_ERROR);
@@ -70,13 +68,11 @@ class RankIndex {
   }
 
  private:
-  UInt32 abs_;
-  UInt32 rel_lo_;
-  UInt32 rel_hi_;
+  UInt32 abs_ = 0;
+  UInt32 rel_lo_ = 0;
+  UInt32 rel_hi_ = 0;
 };
 
-}  // namespace vector
-}  // namespace grimoire
-}  // namespace marisa
+}  // namespace marisa::grimoire::vector
 
 #endif  // MARISA_GRIMOIRE_VECTOR_RANK_INDEX_H_

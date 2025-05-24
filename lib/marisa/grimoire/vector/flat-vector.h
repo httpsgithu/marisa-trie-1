@@ -3,19 +3,20 @@
 
 #include "marisa/grimoire/vector/vector.h"
 
-namespace marisa {
-namespace grimoire {
-namespace vector {
+namespace marisa::grimoire::vector {
 
 class FlatVector {
  public:
 #if MARISA_WORD_SIZE == 64
   typedef UInt64 Unit;
-#else  // MARISA_WORD_SIZE == 64
+#else   // MARISA_WORD_SIZE == 64
   typedef UInt32 Unit;
 #endif  // MARISA_WORD_SIZE == 64
 
-  FlatVector() : units_(), value_size_(0), mask_(0), size_(0) {}
+  FlatVector() = default;
+
+  FlatVector(const FlatVector &) = delete;
+  FlatVector &operator=(const FlatVector &) = delete;
 
   void build(const Vector<UInt32> &values) {
     FlatVector temp;
@@ -47,8 +48,10 @@ class FlatVector {
     if ((unit_offset + value_size_) <= MARISA_WORD_SIZE) {
       return (UInt32)(units_[unit_id] >> unit_offset) & mask_;
     } else {
-      return (UInt32)((units_[unit_id] >> unit_offset)
-          | (units_[unit_id + 1] << (MARISA_WORD_SIZE - unit_offset))) & mask_;
+      return (UInt32)((units_[unit_id] >> unit_offset) |
+                      (units_[unit_id + 1]
+                       << (MARISA_WORD_SIZE - unit_offset))) &
+             mask_;
     }
   }
 
@@ -84,9 +87,9 @@ class FlatVector {
 
  private:
   Vector<Unit> units_;
-  std::size_t value_size_;
-  UInt32 mask_;
-  std::size_t size_;
+  std::size_t value_size_ = 0;
+  UInt32 mask_ = 0;
+  std::size_t size_ = 0;
 
   void build_(const Vector<UInt32> &values) {
     UInt32 max_value = 0;
@@ -104,9 +107,9 @@ class FlatVector {
 
     std::size_t num_units = values.empty() ? 0 : (64 / MARISA_WORD_SIZE);
     if (value_size != 0) {
-      num_units = (std::size_t)(
-          (((UInt64)value_size * values.size()) + (MARISA_WORD_SIZE - 1))
-          / MARISA_WORD_SIZE);
+      num_units = (std::size_t)((((UInt64)value_size * values.size()) +
+                                 (MARISA_WORD_SIZE - 1)) /
+                                MARISA_WORD_SIZE);
       num_units += num_units % (64 / MARISA_WORD_SIZE);
     }
 
@@ -186,20 +189,13 @@ class FlatVector {
     units_[unit_id] &= ~((Unit)mask_ << unit_offset);
     units_[unit_id] |= (Unit)(value & mask_) << unit_offset;
     if ((unit_offset + value_size_) > MARISA_WORD_SIZE) {
-      units_[unit_id + 1] &=
-          ~((Unit)mask_ >> (MARISA_WORD_SIZE - unit_offset));
+      units_[unit_id + 1] &= ~((Unit)mask_ >> (MARISA_WORD_SIZE - unit_offset));
       units_[unit_id + 1] |=
           (Unit)(value & mask_) >> (MARISA_WORD_SIZE - unit_offset);
     }
   }
-
-  // Disallows copy and assignment.
-  FlatVector(const FlatVector &);
-  FlatVector &operator=(const FlatVector &);
 };
 
-}  // namespace vector
-}  // namespace grimoire
-}  // namespace marisa
+}  // namespace marisa::grimoire::vector
 
 #endif  // MARISA_GRIMOIRE_VECTOR_FLAT_VECTOR_H_

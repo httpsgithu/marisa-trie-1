@@ -6,14 +6,15 @@
 
 #include "marisa/base.h"
 
-namespace marisa {
-namespace grimoire {
-namespace io {
+namespace marisa::grimoire::io {
 
 class Writer {
  public:
   Writer();
   ~Writer();
+
+  Writer(const Writer &) = delete;
+  Writer &operator=(const Writer &) = delete;
 
   void open(const char *filename);
   void open(std::FILE *file);
@@ -27,7 +28,7 @@ class Writer {
 
   template <typename T>
   void write(const T *objs, std::size_t num_objs) {
-    MARISA_THROW_IF((objs == NULL) && (num_objs != 0), MARISA_NULL_ERROR);
+    MARISA_THROW_IF((objs == nullptr) && (num_objs != 0), MARISA_NULL_ERROR);
     MARISA_THROW_IF(num_objs > (MARISA_SIZE_MAX / sizeof(T)),
                     MARISA_SIZE_ERROR);
     write_data(objs, sizeof(T) * num_objs);
@@ -41,10 +42,10 @@ class Writer {
   void swap(Writer &rhs);
 
  private:
-  std::FILE *file_;
-  int fd_;
-  std::ostream *stream_;
-  bool needs_fclose_;
+  std::FILE *file_ = nullptr;
+  int fd_ = -1;
+  std::ostream *stream_ = nullptr;
+  bool needs_fclose_ = false;
 
   void open_(const char *filename);
   void open_(std::FILE *file);
@@ -52,14 +53,8 @@ class Writer {
   void open_(std::ostream &stream);
 
   void write_data(const void *data, std::size_t size);
-
-  // Disallows copy and assignment.
-  Writer(const Writer &);
-  Writer &operator=(const Writer &);
 };
 
-}  // namespace io
-}  // namespace grimoire
-}  // namespace marisa
+}  // namespace marisa::grimoire::io
 
 #endif  // MARISA_GRIMOIRE_IO_WRITER_H_

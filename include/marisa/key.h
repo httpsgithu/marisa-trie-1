@@ -1,9 +1,7 @@
 #ifndef MARISA_KEY_H_
 #define MARISA_KEY_H_
 
-#if __cplusplus >= 201703L
- #include <string_view>
-#endif  // __cplusplus >= 201703L
+#include <string_view>
 
 #include "marisa/base.h"
 
@@ -11,31 +9,20 @@ namespace marisa {
 
 class Key {
  public:
-  Key() : ptr_(NULL), length_(0), union_() {
-    union_.id = 0;
-  }
-  Key(const Key &key)
-      : ptr_(key.ptr_), length_(key.length_), union_(key.union_) {}
-
-  Key &operator=(const Key &key) {
-    ptr_ = key.ptr_;
-    length_ = key.length_;
-    union_ = key.union_;
-    return *this;
-  }
+  Key() = default;
+  Key(const Key &key) = default;
+  Key &operator=(const Key &key) = default;
 
   char operator[](std::size_t i) const {
     MARISA_DEBUG_IF(i >= length_, MARISA_BOUND_ERROR);
     return ptr_[i];
   }
 
-#if __cplusplus >= 201703L
   void set_str(std::string_view str) {
     set_str(str.data(), str.length());
   }
-#endif  // __cplusplus >= 201703L
   void set_str(const char *str) {
-    MARISA_DEBUG_IF(str == NULL, MARISA_NULL_ERROR);
+    MARISA_DEBUG_IF(str == nullptr, MARISA_NULL_ERROR);
     std::size_t length = 0;
     while (str[length] != '\0') {
       ++length;
@@ -45,7 +32,7 @@ class Key {
     length_ = (UInt32)length;
   }
   void set_str(const char *ptr, std::size_t length) {
-    MARISA_DEBUG_IF((ptr == NULL) && (length != 0), MARISA_NULL_ERROR);
+    MARISA_DEBUG_IF((ptr == nullptr) && (length != 0), MARISA_NULL_ERROR);
     MARISA_DEBUG_IF(length > MARISA_UINT32_MAX, MARISA_SIZE_ERROR);
     ptr_ = ptr;
     length_ = (UInt32)length;
@@ -58,11 +45,9 @@ class Key {
     union_.weight = weight;
   }
 
-#if __cplusplus >= 201703L
   std::string_view str() const {
     return std::string_view(ptr_, length_);
   }
-#endif  // __cplusplus >= 201703L
   const char *ptr() const {
     return ptr_;
   }
@@ -86,10 +71,10 @@ class Key {
   }
 
  private:
-  const char *ptr_;
-  UInt32 length_;
+  const char *ptr_ = nullptr;
+  UInt32 length_ = 0;
   union Union {
-    UInt32 id;
+    UInt32 id = 0;
     float weight;
   } union_;
 };

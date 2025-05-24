@@ -3,22 +3,13 @@
 
 #include "marisa/base.h"
 
-namespace marisa {
-namespace grimoire {
-namespace trie {
+namespace marisa::grimoire::trie {
 
 class Entry {
  public:
-  Entry() : ptr_(NULL), length_(0), id_(0) {}
-  Entry(const Entry &entry)
-      : ptr_(entry.ptr_), length_(entry.length_), id_(entry.id_) {}
-
-  Entry &operator=(const Entry &entry) {
-    ptr_ = entry.ptr_;
-    length_ = entry.length_;
-    id_ = entry.id_;
-    return *this;
-  }
+  Entry() = default;
+  Entry(const Entry &entry) = default;
+  Entry &operator=(const Entry &entry) = default;
 
   char operator[](std::size_t i) const {
     MARISA_DEBUG_IF(i >= length_, MARISA_BOUND_ERROR);
@@ -26,7 +17,7 @@ class Entry {
   }
 
   void set_str(const char *ptr, std::size_t length) {
-    MARISA_DEBUG_IF((ptr == NULL) && (length != 0), MARISA_NULL_ERROR);
+    MARISA_DEBUG_IF((ptr == nullptr) && (length != 0), MARISA_NULL_ERROR);
     MARISA_DEBUG_IF(length > MARISA_UINT32_MAX, MARISA_SIZE_ERROR);
     ptr_ = ptr + length - 1;
     length_ = (UInt32)length;
@@ -69,13 +60,11 @@ class Entry {
   };
 
  private:
-  const char *ptr_;
-  UInt32 length_;
-  UInt32 id_;
+  const char *ptr_ = nullptr;
+  UInt32 length_ = 0;
+  UInt32 id_ = 0;
 };
 
-}  // namespace trie
-}  // namespace grimoire
-}  // namespace marisa
+}  // namespace marisa::grimoire::trie
 
 #endif  // MARISA_GRIMOIRE_TRIE_ENTRY_H_

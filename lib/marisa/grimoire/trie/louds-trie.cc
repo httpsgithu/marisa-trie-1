@@ -1,3 +1,5 @@
+#include "marisa/grimoire/trie/louds-trie.h"
+
 #include <algorithm>
 #include <functional>
 #include <queue>
@@ -6,18 +8,15 @@
 #include "marisa/grimoire/trie/header.h"
 #include "marisa/grimoire/trie/range.h"
 #include "marisa/grimoire/trie/state.h"
-#include "marisa/grimoire/trie/louds-trie.h"
 
-namespace marisa {
-namespace grimoire {
-namespace trie {
+namespace marisa::grimoire::trie {
 
 LoudsTrie::LoudsTrie()
-    : louds_(), terminal_flags_(), link_flags_(), bases_(), extras_(),
-      tail_(), next_trie_(), cache_(), cache_mask_(0), num_l1_nodes_(0),
-      config_(), mapper_() {}
+    : louds_(), terminal_flags_(), link_flags_(), bases_(), extras_(), tail_(),
+      next_trie_(), cache_(), cache_mask_(0), num_l1_nodes_(0), config_(),
+      mapper_() {}
 
-LoudsTrie::~LoudsTrie() {}
+LoudsTrie::~LoudsTrie() = default;
 
 void LoudsTrie::build(Keyset &keyset, int flags) {
   Config config;
@@ -82,12 +81,12 @@ void LoudsTrie::reverse_lookup(Agent &agent) const {
     agent.set_key(agent.query().id());
     return;
   }
-  for ( ; ; ) {
+  for (;;) {
     if (link_flags_[state.node_id()]) {
       const std::size_t prev_key_pos = state.key_buf().size();
       restore(agent, get_link(state.node_id()));
       std::reverse(state.key_buf().begin() + prev_key_pos,
-          state.key_buf().end());
+                   state.key_buf().end());
     } else {
       state.key_buf().push_back((char)bases_[state.node_id()]);
     }
@@ -163,7 +162,7 @@ bool LoudsTrie::predictive_search(Agent &agent) const {
     }
   }
 
-  for ( ; ; ) {
+  for (;;) {
     if (state.history_pos() == state.history().size()) {
       const History &current = state.history().back();
       History next;
@@ -198,8 +197,7 @@ bool LoudsTrie::predictive_search(Agent &agent) const {
     } else if (state.history_pos() != 1) {
       History &current = state.history()[state.history_pos() - 1];
       current.set_node_id(current.node_id() + 1);
-      const History &prev =
-          state.history()[state.history_pos() - 2];
+      const History &prev = state.history()[state.history_pos() - 2];
       state.key_buf().resize(prev.key_pos());
       state.set_history_pos(state.history_pos() - 1);
     } else {
@@ -210,20 +208,20 @@ bool LoudsTrie::predictive_search(Agent &agent) const {
 }
 
 std::size_t LoudsTrie::total_size() const {
-  return louds_.total_size() + terminal_flags_.total_size()
-      + link_flags_.total_size() + bases_.total_size()
-      + extras_.total_size() + tail_.total_size()
-      + ((next_trie_.get() != NULL) ? next_trie_->total_size() : 0)
-      + cache_.total_size();
+  return louds_.total_size() + terminal_flags_.total_size() +
+         link_flags_.total_size() + bases_.total_size() + extras_.total_size() +
+         tail_.total_size() +
+         ((next_trie_ != nullptr) ? next_trie_->total_size() : 0) +
+         cache_.total_size();
 }
 
 std::size_t LoudsTrie::io_size() const {
-  return Header().io_size() + louds_.io_size()
-      + terminal_flags_.io_size() + link_flags_.io_size()
-      + bases_.io_size() + extras_.io_size() + tail_.io_size()
-      + ((next_trie_.get() != NULL) ?
-          (next_trie_->io_size() - Header().io_size()) : 0)
-      + cache_.io_size() + (sizeof(UInt32) * 2);
+  return Header().io_size() + louds_.io_size() + terminal_flags_.io_size() +
+         link_flags_.io_size() + bases_.io_size() + extras_.io_size() +
+         tail_.io_size() +
+         ((next_trie_ != nullptr) ? (next_trie_->io_size() - Header().io_size())
+                                  : 0) +
+         cache_.io_size() + (sizeof(UInt32) * 2);
 }
 
 void LoudsTrie::clear() {
@@ -256,19 +254,20 @@ void LoudsTrie::build_(Keyset &keyset, const Config &config) {
   Vector<UInt32> terminals;
   build_trie(keys, &terminals, config, 1);
 
-  typedef std::pair<UInt32, UInt32> TerminalIdPair;
-
-  Vector<TerminalIdPair> pairs;
-  pairs.resize(terminals.size());
-  for (std::size_t i = 0; i < pairs.size(); ++i) {
+  using TerminalIdPair = std::pair<UInt32, UInt32>;
+  const std::size_t pairs_size = terminals.size();
+  std::unique_ptr<TerminalIdPair[]> pairs(new (std::nothrow)
+                                              TerminalIdPair[pairs_size]);
+  MARISA_THROW_IF(!pairs, MARISA_MEMORY_ERROR);
+  for (std::size_t i = 0; i < pairs_size; ++i) {
     pairs[i].first = terminals[i];
     pairs[i].second = (UInt32)i;
   }
   terminals.clear();
-  std::sort(pairs.begin(), pairs.end());
+  std::sort(pairs.get(), pairs.get() + pairs_size);
 
   std::size_t node_id = 0;
-  for (std::size_t i = 0; i < pairs.size(); ++i) {
+  for (std::size_t i = 0; i < pairs_size; ++i) {
     while (node_id < pairs[i].first) {
       terminal_flags_.push_back(false);
       ++node_id;
@@ -291,8 +290,8 @@ void LoudsTrie::build_(Keyset &keyset, const Config &config) {
 }
 
 template <typename T>
-void LoudsTrie::build_trie(Vector<T> &keys,
-    Vector<UInt32> *terminals, const Config &config, std::size_t trie_id) {
+void LoudsTrie::build_trie(Vector<T> &keys, Vector<UInt32> *terminals,
+                           const Config &config, std::size_t trie_id) {
   build_current_trie(keys, terminals, config, trie_id);
 
   Vector<UInt32> next_terminals;
@@ -300,12 +299,12 @@ void LoudsTrie::build_trie(Vector<T> &keys,
     build_next_trie(keys, &next_terminals, config, trie_id);
   }
 
-  if (next_trie_.get() != NULL) {
+  if (next_trie_ != nullptr) {
     config_.parse(static_cast<int>((next_trie_->num_tries() + 1)) |
-        next_trie_->tail_mode() | next_trie_->node_order());
+                  next_trie_->tail_mode() | next_trie_->node_order());
   } else {
     config_.parse(1 | tail_.mode() | config.node_order() |
-        config.cache_level());
+                  config.cache_level());
   }
 
   link_flags_.build(false, false);
@@ -323,9 +322,9 @@ void LoudsTrie::build_trie(Vector<T> &keys,
 }
 
 template <typename T>
-void LoudsTrie::build_current_trie(Vector<T> &keys,
-    Vector<UInt32> *terminals, const Config &config,
-    std::size_t trie_id) try {
+void LoudsTrie::build_current_trie(Vector<T> &keys, Vector<UInt32> *terminals,
+                                   const Config &config,
+                                   std::size_t trie_id) try {
   for (std::size_t i = 0; i < keys.size(); ++i) {
     keys[i].set_id(i);
   }
@@ -349,7 +348,7 @@ void LoudsTrie::build_current_trie(Vector<T> &keys,
     queue.pop();
 
     while ((range.begin() < range.end()) &&
-        (keys[range.begin()].length() == range.key_pos())) {
+           (keys[range.begin()].length() == range.key_pos())) {
       keys[range.begin()].set_terminal(node_id);
       range.set_begin(range.begin() + 1);
     }
@@ -363,18 +362,18 @@ void LoudsTrie::build_current_trie(Vector<T> &keys,
     double weight = keys[range.begin()].weight();
     for (std::size_t i = range.begin() + 1; i < range.end(); ++i) {
       if (keys[i - 1][range.key_pos()] != keys[i][range.key_pos()]) {
-        w_ranges.push_back(make_weighted_range(
-            range.begin(), i, range.key_pos(), (float)weight));
+        w_ranges.push_back(make_weighted_range(range.begin(), i,
+                                               range.key_pos(), (float)weight));
         range.set_begin(i);
         weight = 0.0;
       }
       weight += keys[i].weight();
     }
-    w_ranges.push_back(make_weighted_range(
-        range.begin(), range.end(), range.key_pos(), (float)weight));
+    w_ranges.push_back(make_weighted_range(range.begin(), range.end(),
+                                           range.key_pos(), (float)weight));
     if (config.node_order() == MARISA_WEIGHT_ORDER) {
       std::stable_sort(w_ranges.begin(), w_ranges.end(),
-          std::greater<WeightedRange>());
+                       std::greater<WeightedRange>());
     }
 
     if (node_id == 0) {
@@ -397,7 +396,7 @@ void LoudsTrie::build_current_trie(Vector<T> &keys,
         ++key_pos;
       }
       cache<T>(node_id, bases_.size(), w_range.weight(),
-          keys[w_range.begin()][w_range.key_pos()]);
+               keys[w_range.begin()][w_range.key_pos()]);
 
       if (key_pos == w_range.key_pos() + 1) {
         bases_.push_back(static_cast<unsigned char>(
@@ -408,7 +407,7 @@ void LoudsTrie::build_current_trie(Vector<T> &keys,
         link_flags_.push_back(true);
         T next_key;
         next_key.set_str(keys[w_range.begin()].ptr(),
-            keys[w_range.begin()].length());
+                         keys[w_range.begin()].length());
         next_key.substr(w_range.key_pos(), key_pos - w_range.key_pos());
         next_key.set_weight(w_range.weight());
         next_keys.push_back(next_key);
@@ -431,8 +430,8 @@ void LoudsTrie::build_current_trie(Vector<T> &keys,
 }
 
 template <>
-void LoudsTrie::build_next_trie(Vector<Key> &keys,
-    Vector<UInt32> *terminals, const Config &config, std::size_t trie_id) {
+void LoudsTrie::build_next_trie(Vector<Key> &keys, Vector<UInt32> *terminals,
+                                const Config &config, std::size_t trie_id) {
   if (trie_id == config.num_tries()) {
     Vector<Entry> entries;
     entries.resize(keys.size());
@@ -450,13 +449,14 @@ void LoudsTrie::build_next_trie(Vector<Key> &keys,
   }
   keys.clear();
   next_trie_.reset(new (std::nothrow) LoudsTrie);
-  MARISA_THROW_IF(next_trie_.get() == NULL, MARISA_MEMORY_ERROR);
+  MARISA_THROW_IF(next_trie_ == nullptr, MARISA_MEMORY_ERROR);
   next_trie_->build_trie(reverse_keys, terminals, config, trie_id + 1);
 }
 
 template <>
 void LoudsTrie::build_next_trie(Vector<ReverseKey> &keys,
-    Vector<UInt32> *terminals, const Config &config, std::size_t trie_id) {
+                                Vector<UInt32> *terminals, const Config &config,
+                                std::size_t trie_id) {
   if (trie_id == config.num_tries()) {
     Vector<Entry> entries;
     entries.resize(keys.size());
@@ -467,13 +467,13 @@ void LoudsTrie::build_next_trie(Vector<ReverseKey> &keys,
     return;
   }
   next_trie_.reset(new (std::nothrow) LoudsTrie);
-  MARISA_THROW_IF(next_trie_.get() == NULL, MARISA_MEMORY_ERROR);
+  MARISA_THROW_IF(next_trie_ == nullptr, MARISA_MEMORY_ERROR);
   next_trie_->build_trie(keys, terminals, config, trie_id + 1);
 }
 
 template <typename T>
 void LoudsTrie::build_terminals(const Vector<T> &keys,
-    Vector<UInt32> *terminals) const {
+                                Vector<UInt32> *terminals) const {
   Vector<UInt32> temp;
   temp.resize(keys.size());
   for (std::size_t i = 0; i < keys.size(); ++i) {
@@ -483,8 +483,8 @@ void LoudsTrie::build_terminals(const Vector<T> &keys,
 }
 
 template <>
-void LoudsTrie::cache<Key>(std::size_t parent, std::size_t child,
-    float weight, char label) {
+void LoudsTrie::cache<Key>(std::size_t parent, std::size_t child, float weight,
+                           char label) {
   MARISA_DEBUG_IF(parent >= child, MARISA_RANGE_ERROR);
 
   const std::size_t cache_id = get_cache_id(parent, label);
@@ -496,7 +496,7 @@ void LoudsTrie::cache<Key>(std::size_t parent, std::size_t child,
 }
 
 void LoudsTrie::reserve_cache(const Config &config, std::size_t trie_id,
-    std::size_t num_keys) {
+                              std::size_t num_keys) {
   std::size_t cache_size = (trie_id == 1) ? 256 : 1;
   while (cache_size < (num_keys / config.cache_level())) {
     cache_size *= 2;
@@ -507,7 +507,7 @@ void LoudsTrie::reserve_cache(const Config &config, std::size_t trie_id,
 
 template <>
 void LoudsTrie::cache<ReverseKey>(std::size_t parent, std::size_t child,
-    float weight, char) {
+                                  float weight, char) {
   MARISA_DEBUG_IF(parent >= child, MARISA_RANGE_ERROR);
 
   const std::size_t cache_id = get_cache_id(child);
@@ -523,8 +523,9 @@ void LoudsTrie::fill_cache() {
     const std::size_t node_id = cache_[i].child();
     if (node_id != 0) {
       cache_[i].set_base(bases_[node_id]);
-      cache_[i].set_extra(!link_flags_[node_id] ?
-          MARISA_INVALID_EXTRA : extras_[link_flags_.rank1(node_id)]);
+      cache_[i].set_extra(!link_flags_[node_id]
+                              ? MARISA_INVALID_EXTRA
+                              : extras_[link_flags_.rank1(node_id)]);
     } else {
       cache_[i].set_parent(MARISA_UINT32_MAX);
       cache_[i].set_child(MARISA_UINT32_MAX);
@@ -541,7 +542,7 @@ void LoudsTrie::map_(Mapper &mapper) {
   tail_.map(mapper);
   if ((link_flags_.num_1s() != 0) && tail_.empty()) {
     next_trie_.reset(new (std::nothrow) LoudsTrie);
-    MARISA_THROW_IF(next_trie_.get() == NULL, MARISA_MEMORY_ERROR);
+    MARISA_THROW_IF(next_trie_ == nullptr, MARISA_MEMORY_ERROR);
     next_trie_->map_(mapper);
   }
   cache_.map(mapper);
@@ -567,7 +568,7 @@ void LoudsTrie::read_(Reader &reader) {
   tail_.read(reader);
   if ((link_flags_.num_1s() != 0) && tail_.empty()) {
     next_trie_.reset(new (std::nothrow) LoudsTrie);
-    MARISA_THROW_IF(next_trie_.get() == NULL, MARISA_MEMORY_ERROR);
+    MARISA_THROW_IF(next_trie_ == nullptr, MARISA_MEMORY_ERROR);
     next_trie_->read_(reader);
   }
   cache_.read(reader);
@@ -591,7 +592,7 @@ void LoudsTrie::write_(Writer &writer) const {
   bases_.write(writer);
   extras_.write(writer);
   tail_.write(writer);
-  if (next_trie_.get() != NULL) {
+  if (next_trie_ != nullptr) {
     next_trie_->write_(writer);
   }
   cache_.write(writer);
@@ -601,11 +602,11 @@ void LoudsTrie::write_(Writer &writer) const {
 
 bool LoudsTrie::find_child(Agent &agent) const {
   MARISA_DEBUG_IF(agent.state().query_pos() >= agent.query().length(),
-      MARISA_BOUND_ERROR);
+                  MARISA_BOUND_ERROR);
 
   State &state = agent.state();
-  const std::size_t cache_id = get_cache_id(state.node_id(),
-      agent.query()[state.query_pos()]);
+  const std::size_t cache_id =
+      get_cache_id(state.node_id(), agent.query()[state.query_pos()]);
   if (state.node_id() == cache_[cache_id].parent()) {
     if (cache_[cache_id].extra() != MARISA_INVALID_EXTRA) {
       if (!match(agent, cache_[cache_id].link())) {
@@ -634,7 +635,7 @@ bool LoudsTrie::find_child(Agent &agent) const {
         return false;
       }
     } else if (bases_[state.node_id()] ==
-        (UInt8)agent.query()[state.query_pos()]) {
+               (UInt8)agent.query()[state.query_pos()]) {
       state.set_query_pos(state.query_pos() + 1);
       return true;
     }
@@ -646,11 +647,11 @@ bool LoudsTrie::find_child(Agent &agent) const {
 
 bool LoudsTrie::predictive_find_child(Agent &agent) const {
   MARISA_DEBUG_IF(agent.state().query_pos() >= agent.query().length(),
-      MARISA_BOUND_ERROR);
+                  MARISA_BOUND_ERROR);
 
   State &state = agent.state();
-  const std::size_t cache_id = get_cache_id(state.node_id(),
-      agent.query()[state.query_pos()]);
+  const std::size_t cache_id =
+      get_cache_id(state.node_id(), agent.query()[state.query_pos()]);
   if (state.node_id() == cache_[cache_id].parent()) {
     if (cache_[cache_id].extra() != MARISA_INVALID_EXTRA) {
       if (!prefix_match(agent, cache_[cache_id].link())) {
@@ -680,7 +681,7 @@ bool LoudsTrie::predictive_find_child(Agent &agent) const {
         return false;
       }
     } else if (bases_[state.node_id()] ==
-        (UInt8)agent.query()[state.query_pos()]) {
+               (UInt8)agent.query()[state.query_pos()]) {
       state.key_buf().push_back((char)bases_[state.node_id()]);
       state.set_query_pos(state.query_pos() + 1);
       return true;
@@ -692,15 +693,15 @@ bool LoudsTrie::predictive_find_child(Agent &agent) const {
 }
 
 void LoudsTrie::restore(Agent &agent, std::size_t link) const {
-  if (next_trie_.get() != NULL) {
-    next_trie_->restore_(agent,  link);
+  if (next_trie_ != nullptr) {
+    next_trie_->restore_(agent, link);
   } else {
     tail_.restore(agent, link);
   }
 }
 
 bool LoudsTrie::match(Agent &agent, std::size_t link) const {
-  if (next_trie_.get() != NULL) {
+  if (next_trie_ != nullptr) {
     return next_trie_->match_(agent, link);
   } else {
     return tail_.match(agent, link);
@@ -708,7 +709,7 @@ bool LoudsTrie::match(Agent &agent, std::size_t link) const {
 }
 
 bool LoudsTrie::prefix_match(Agent &agent, std::size_t link) const {
-  if (next_trie_.get() != NULL) {
+  if (next_trie_ != nullptr) {
     return next_trie_->prefix_match_(agent, link);
   } else {
     return tail_.prefix_match(agent, link);
@@ -719,11 +720,11 @@ void LoudsTrie::restore_(Agent &agent, std::size_t node_id) const {
   MARISA_DEBUG_IF(node_id == 0, MARISA_RANGE_ERROR);
 
   State &state = agent.state();
-  for ( ; ; ) {
+  for (;;) {
     const std::size_t cache_id = get_cache_id(node_id);
     if (node_id == cache_[cache_id].child()) {
       if (cache_[cache_id].extra() != MARISA_INVALID_EXTRA) {
-        restore(agent,  cache_[cache_id].link());
+        restore(agent, cache_[cache_id].link());
       } else {
         state.key_buf().push_back(cache_[cache_id].label());
       }
@@ -750,19 +751,18 @@ void LoudsTrie::restore_(Agent &agent, std::size_t node_id) const {
 
 bool LoudsTrie::match_(Agent &agent, std::size_t node_id) const {
   MARISA_DEBUG_IF(agent.state().query_pos() >= agent.query().length(),
-      MARISA_BOUND_ERROR);
+                  MARISA_BOUND_ERROR);
   MARISA_DEBUG_IF(node_id == 0, MARISA_RANGE_ERROR);
 
   State &state = agent.state();
-  for ( ; ; ) {
+  for (;;) {
     const std::size_t cache_id = get_cache_id(node_id);
     if (node_id == cache_[cache_id].child()) {
       if (cache_[cache_id].extra() != MARISA_INVALID_EXTRA) {
         if (!match(agent, cache_[cache_id].link())) {
           return false;
         }
-      } else if (cache_[cache_id].label() ==
-          agent.query()[state.query_pos()]) {
+      } else if (cache_[cache_id].label() == agent.query()[state.query_pos()]) {
         state.set_query_pos(state.query_pos() + 1);
       } else {
         return false;
@@ -778,7 +778,7 @@ bool LoudsTrie::match_(Agent &agent, std::size_t node_id) const {
     }
 
     if (link_flags_[node_id]) {
-      if (next_trie_.get() != NULL) {
+      if (next_trie_ != nullptr) {
         if (!match(agent, get_link(node_id))) {
           return false;
         }
@@ -802,19 +802,18 @@ bool LoudsTrie::match_(Agent &agent, std::size_t node_id) const {
 
 bool LoudsTrie::prefix_match_(Agent &agent, std::size_t node_id) const {
   MARISA_DEBUG_IF(agent.state().query_pos() >= agent.query().length(),
-      MARISA_BOUND_ERROR);
+                  MARISA_BOUND_ERROR);
   MARISA_DEBUG_IF(node_id == 0, MARISA_RANGE_ERROR);
 
   State &state = agent.state();
-  for ( ; ; ) {
+  for (;;) {
     const std::size_t cache_id = get_cache_id(node_id);
     if (node_id == cache_[cache_id].child()) {
       if (cache_[cache_id].extra() != MARISA_INVALID_EXTRA) {
         if (!prefix_match(agent, cache_[cache_id].link())) {
           return false;
         }
-      } else if (cache_[cache_id].label() ==
-          agent.query()[state.query_pos()]) {
+      } else if (cache_[cache_id].label() == agent.query()[state.query_pos()]) {
         state.key_buf().push_back(cache_[cache_id].label());
         state.set_query_pos(state.query_pos() + 1);
       } else {
@@ -859,20 +858,18 @@ std::size_t LoudsTrie::get_cache_id(std::size_t node_id) const {
 }
 
 std::size_t LoudsTrie::get_link(std::size_t node_id) const {
-  return  bases_[node_id] | (extras_[link_flags_.rank1(node_id)] * 256);
+  return bases_[node_id] | (extras_[link_flags_.rank1(node_id)] * 256);
 }
 
 std::size_t LoudsTrie::get_link(std::size_t node_id,
-    std::size_t link_id) const {
-  return  bases_[node_id] | (extras_[link_id] * 256);
+                                std::size_t link_id) const {
+  return bases_[node_id] | (extras_[link_id] * 256);
 }
 
 std::size_t LoudsTrie::update_link_id(std::size_t link_id,
-    std::size_t node_id) const {
-  return (link_id == MARISA_INVALID_LINK_ID) ?
-      link_flags_.rank1(node_id) : (link_id + 1);
+                                      std::size_t node_id) const {
+  return (link_id == MARISA_INVALID_LINK_ID) ? link_flags_.rank1(node_id)
+                                             : (link_id + 1);
 }
 
-}  // namespace trie
-}  // namespace grimoire
-}  // namespace marisa
+}  // namespace marisa::grimoire::trie

@@ -1,12 +1,10 @@
 #ifndef MARISA_GRIMOIRE_TRIE_STATE_H_
 #define MARISA_GRIMOIRE_TRIE_STATE_H_
 
-#include "marisa/grimoire/vector.h"
 #include "marisa/grimoire/trie/history.h"
+#include "marisa/grimoire/vector.h"
 
-namespace marisa {
-namespace grimoire {
-namespace trie {
+namespace marisa::grimoire::trie {
 
 // A search agent has its internal state and the status codes are defined
 // below.
@@ -20,9 +18,12 @@ typedef enum StatusCode {
 
 class State {
  public:
-  State()
-      : key_buf_(), history_(), node_id_(0), query_pos_(0),
-        history_pos_(0), status_code_(MARISA_READY_TO_ALL) {}
+  State() = default;
+
+  State(const State &) = default;
+  State &operator=(const State &) = default;
+  State(State &&) noexcept = default;
+  State &operator=(State &&) noexcept = default;
 
   void set_node_id(std::size_t node_id) {
     MARISA_DEBUG_IF(node_id > MARISA_UINT32_MAX, MARISA_SIZE_ERROR);
@@ -100,18 +101,12 @@ class State {
  private:
   Vector<char> key_buf_;
   Vector<History> history_;
-  UInt32 node_id_;
-  UInt32 query_pos_;
-  UInt32 history_pos_;
-  StatusCode status_code_;
-
-  // Disallows copy and assignment.
-  State(const State &);
-  State &operator=(const State &);
+  UInt32 node_id_ = 0;
+  UInt32 query_pos_ = 0;
+  UInt32 history_pos_ = 0;
+  StatusCode status_code_ = MARISA_READY_TO_ALL;
 };
 
-}  // namespace trie
-}  // namespace grimoire
-}  // namespace marisa
+}  // namespace marisa::grimoire::trie
 
 #endif  // MARISA_GRIMOIRE_TRIE_STATE_H_

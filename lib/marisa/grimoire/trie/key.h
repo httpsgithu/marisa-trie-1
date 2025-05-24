@@ -3,26 +3,13 @@
 
 #include "marisa/base.h"
 
-namespace marisa {
-namespace grimoire {
-namespace trie {
+namespace marisa::grimoire::trie {
 
 class Key {
  public:
-  Key() : ptr_(NULL), length_(0), union_(), id_(0) {
-    union_.terminal = 0;
-  }
-  Key(const Key &entry)
-      : ptr_(entry.ptr_), length_(entry.length_),
-        union_(entry.union_), id_(entry.id_) {}
-
-  Key &operator=(const Key &entry) {
-    ptr_ = entry.ptr_;
-    length_ = entry.length_;
-    union_ = entry.union_;
-    id_ = entry.id_;
-    return *this;
-  }
+  Key() = default;
+  Key(const Key &entry) = default;
+  Key &operator=(const Key &entry) = default;
 
   char operator[](std::size_t i) const {
     MARISA_DEBUG_IF(i >= length_, MARISA_BOUND_ERROR);
@@ -38,7 +25,7 @@ class Key {
   }
 
   void set_str(const char *ptr, std::size_t length) {
-    MARISA_DEBUG_IF((ptr == NULL) && (length != 0), MARISA_NULL_ERROR);
+    MARISA_DEBUG_IF((ptr == nullptr) && (length != 0), MARISA_NULL_ERROR);
     MARISA_DEBUG_IF(length > MARISA_UINT32_MAX, MARISA_SIZE_ERROR);
     ptr_ = ptr;
     length_ = (UInt32)length;
@@ -72,13 +59,13 @@ class Key {
   }
 
  private:
-  const char *ptr_;
-  UInt32 length_;
+  const char *ptr_ = nullptr;
+  UInt32 length_ = 0;
   union Union {
     float weight;
-    UInt32 terminal;
+    UInt32 terminal = 0;
   } union_;
-  UInt32 id_;
+  UInt32 id_ = 0;
 };
 
 inline bool operator==(const Key &lhs, const Key &rhs) {
@@ -115,20 +102,9 @@ inline bool operator>(const Key &lhs, const Key &rhs) {
 
 class ReverseKey {
  public:
-  ReverseKey() : ptr_(NULL), length_(0), union_(), id_(0) {
-    union_.terminal = 0;
-  }
-  ReverseKey(const ReverseKey &entry)
-      : ptr_(entry.ptr_), length_(entry.length_),
-        union_(entry.union_), id_(entry.id_) {}
-
-  ReverseKey &operator=(const ReverseKey &entry) {
-    ptr_ = entry.ptr_;
-    length_ = entry.length_;
-    union_ = entry.union_;
-    id_ = entry.id_;
-    return *this;
-  }
+  ReverseKey() = default;
+  ReverseKey(const ReverseKey &entry) = default;
+  ReverseKey &operator=(const ReverseKey &entry) = default;
 
   char operator[](std::size_t i) const {
     MARISA_DEBUG_IF(i >= length_, MARISA_BOUND_ERROR);
@@ -144,7 +120,7 @@ class ReverseKey {
   }
 
   void set_str(const char *ptr, std::size_t length) {
-    MARISA_DEBUG_IF((ptr == NULL) && (length != 0), MARISA_NULL_ERROR);
+    MARISA_DEBUG_IF((ptr == nullptr) && (length != 0), MARISA_NULL_ERROR);
     MARISA_DEBUG_IF(length > MARISA_UINT32_MAX, MARISA_SIZE_ERROR);
     ptr_ = ptr + length;
     length_ = (UInt32)length;
@@ -178,13 +154,13 @@ class ReverseKey {
   }
 
  private:
-  const char *ptr_;
-  UInt32 length_;
+  const char *ptr_ = nullptr;
+  UInt32 length_ = 0;
   union Union {
     float weight;
-    UInt32 terminal;
+    UInt32 terminal = 0;
   } union_;
-  UInt32 id_;
+  UInt32 id_ = 0;
 };
 
 inline bool operator==(const ReverseKey &lhs, const ReverseKey &rhs) {
@@ -219,8 +195,6 @@ inline bool operator>(const ReverseKey &lhs, const ReverseKey &rhs) {
   return rhs < lhs;
 }
 
-}  // namespace trie
-}  // namespace grimoire
-}  // namespace marisa
+}  // namespace marisa::grimoire::trie
 
 #endif  // MARISA_GRIMOIRE_TRIE_KEY_H_

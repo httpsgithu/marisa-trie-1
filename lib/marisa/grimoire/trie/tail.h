@@ -2,19 +2,19 @@
 #define MARISA_GRIMOIRE_TRIE_TAIL_H_
 
 #include "marisa/agent.h"
-#include "marisa/grimoire/vector.h"
 #include "marisa/grimoire/trie/entry.h"
+#include "marisa/grimoire/vector.h"
 
-namespace marisa {
-namespace grimoire {
-namespace trie {
+namespace marisa::grimoire::trie {
 
 class Tail {
  public:
   Tail();
 
-  void build(Vector<Entry> &entries, Vector<UInt32> *offsets,
-      TailMode mode);
+  Tail(const Tail &) = delete;
+  Tail &operator=(const Tail &) = delete;
+
+  void build(Vector<Entry> &entries, Vector<UInt32> *offsets, TailMode mode);
 
   void map(Mapper &mapper);
   void read(Reader &reader);
@@ -53,20 +53,13 @@ class Tail {
   Vector<char> buf_;
   BitVector end_flags_;
 
-  void build_(Vector<Entry> &entries, Vector<UInt32> *offsets,
-      TailMode mode);
+  void build_(Vector<Entry> &entries, Vector<UInt32> *offsets, TailMode mode);
 
   void map_(Mapper &mapper);
   void read_(Reader &reader);
   void write_(Writer &writer) const;
-
-  // Disallows copy and assignment.
-  Tail(const Tail &);
-  Tail &operator=(const Tail &);
 };
 
-}  // namespace trie
-}  // namespace grimoire
-}  // namespace marisa
+}  // namespace marisa::grimoire::trie
 
 #endif  // MARISA_GRIMOIRE_TRIE_TAIL_H_

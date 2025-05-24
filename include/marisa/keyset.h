@@ -2,10 +2,7 @@
 #define MARISA_KEYSET_H_
 
 #include <memory>
-
-#if __cplusplus >= 201703L
- #include <string_view>
-#endif //  __cplusplus >= 201703L
+#include <string_view>
 
 #include "marisa/key.h"
 
@@ -14,21 +11,22 @@ namespace marisa {
 class Keyset {
  public:
   enum {
-    BASE_BLOCK_SIZE  = 4096,
+    BASE_BLOCK_SIZE = 4096,
     EXTRA_BLOCK_SIZE = 1024,
-    KEY_BLOCK_SIZE   = 256
+    KEY_BLOCK_SIZE = 256
   };
 
   Keyset();
 
+  Keyset(const Keyset &) = delete;
+  Keyset &operator=(const Keyset &) = delete;
+
   void push_back(const Key &key);
   void push_back(const Key &key, char end_marker);
 
-#if __cplusplus >= 201703L
   void push_back(std::string_view str, float weight = 1.0) {
     push_back(str.data(), str.length(), weight);
   }
-#endif // __cplusplus >= 201703L
   void push_back(const char *str);
   void push_back(const char *ptr, std::size_t length, float weight = 1.0);
 
@@ -80,10 +78,6 @@ class Keyset {
   void append_base_block();
   void append_extra_block(std::size_t size);
   void append_key_block();
-
-  // Disallows copy and assignment.
-  Keyset(const Keyset &);
-  Keyset &operator=(const Keyset &);
 };
 
 }  // namespace marisa

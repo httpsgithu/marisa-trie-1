@@ -3,9 +3,7 @@
 
 #include "marisa/grimoire/io.h"
 
-namespace marisa {
-namespace grimoire {
-namespace trie {
+namespace marisa::grimoire::trie {
 
 class Header {
  public:
@@ -13,7 +11,10 @@ class Header {
     HEADER_SIZE = 16
   };
 
-  Header() {}
+  Header() = default;
+
+  Header(const Header &) = delete;
+  Header &operator=(const Header &) = delete;
 
   void map(Mapper &mapper) {
     const char *ptr;
@@ -34,7 +35,6 @@ class Header {
   }
 
  private:
-
   static const char *get_header() {
     static const char buf[HEADER_SIZE] = "We love Marisa.";
     return buf;
@@ -48,14 +48,8 @@ class Header {
     }
     return true;
   }
-
-  // Disallows copy and assignment.
-  Header(const Header &);
-  Header &operator=(const Header &);
 };
 
-}  // namespace trie
-}  // namespace marisa
-}  // namespace grimoire
+}  // namespace marisa::grimoire::trie
 
 #endif  // MARISA_GRIMOIRE_TRIE_HEADER_H_
