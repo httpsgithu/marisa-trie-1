@@ -3,19 +3,20 @@
 
 #include "marisa/grimoire/vector/vector.h"
 
-namespace marisa {
-namespace grimoire {
-namespace vector {
+namespace marisa::grimoire::vector {
 
 class FlatVector {
  public:
 #if MARISA_WORD_SIZE == 64
-  typedef UInt64 Unit;
-#else  // MARISA_WORD_SIZE == 64
-  typedef UInt32 Unit;
+  using Unit = UInt64;
+#else   // MARISA_WORD_SIZE == 64
+  using Unit = UInt32;
 #endif  // MARISA_WORD_SIZE == 64
 
-  FlatVector() : units_(), value_size_(0), mask_(0), size_(0) {}
+  FlatVector() = default;
+
+  FlatVector(const FlatVector &) = delete;
+  FlatVector &operator=(const FlatVector &) = delete;
 
   void build(const Vector<UInt32> &values) {
     FlatVector temp;
@@ -45,10 +46,12 @@ class FlatVector {
     const std::size_t unit_offset = pos % MARISA_WORD_SIZE;
 
     if ((unit_offset + value_size_) <= MARISA_WORD_SIZE) {
-      return (UInt32)(units_[unit_id] >> unit_offset) & mask_;
+      return static_cast<UInt32>(units_[unit_id] >> unit_offset) & mask_;
     } else {
-      return (UInt32)((units_[unit_id] >> unit_offset)
-          | (units_[unit_id + 1] << (MARISA_WORD_SIZE - unit_offset))) & mask_;
+      return static_cast<UInt32>(
+                 (units_[unit_id] >> unit_offset) |
+                 (units_[unit_id + 1] << (MARISA_WORD_SIZE - unit_offset))) &
+             mask_;
     }
   }
 
@@ -72,21 +75,21 @@ class FlatVector {
     return units_.io_size() + (sizeof(UInt32) * 2) + sizeof(UInt64);
   }
 
-  void clear() {
+  void clear() noexcept {
     FlatVector().swap(*this);
   }
-  void swap(FlatVector &rhs) {
+  void swap(FlatVector &rhs) noexcept {
     units_.swap(rhs.units_);
-    marisa::swap(value_size_, rhs.value_size_);
-    marisa::swap(mask_, rhs.mask_);
-    marisa::swap(size_, rhs.size_);
+    std::swap(value_size_, rhs.value_size_);
+    std::swap(mask_, rhs.mask_);
+    std::swap(size_, rhs.size_);
   }
 
  private:
   Vector<Unit> units_;
-  std::size_t value_size_;
-  UInt32 mask_;
-  std::size_t size_;
+  std::size_t value_size_ = 0;
+  UInt32 mask_ = 0;
+  std::size_t size_ = 0;
 
   void build_(const Vector<UInt32> &values) {
     UInt32 max_value = 0;
@@ -104,9 +107,10 @@ class FlatVector {
 
     std::size_t num_units = values.empty() ? 0 : (64 / MARISA_WORD_SIZE);
     if (value_size != 0) {
-      num_units = (std::size_t)(
-          (((UInt64)value_size * values.size()) + (MARISA_WORD_SIZE - 1))
-          / MARISA_WORD_SIZE);
+      num_units = static_cast<std::size_t>(
+          ((static_cast<UInt64>(value_size) * values.size()) +
+           (MARISA_WORD_SIZE - 1)) /
+          MARISA_WORD_SIZE);
       num_units += num_units % (64 / MARISA_WORD_SIZE);
     }
 
@@ -117,7 +121,7 @@ class FlatVector {
 
     value_size_ = value_size;
     if (value_size != 0) {
-      mask_ = MARISA_UINT32_MAX >> (32 - value_size);
+      mask_ = UINT32_MAX >> (32 - value_size);
     }
     size_ = values.size();
 
@@ -142,8 +146,8 @@ class FlatVector {
     {
       UInt64 temp_size;
       mapper.map(&temp_size);
-      MARISA_THROW_IF(temp_size > MARISA_SIZE_MAX, MARISA_SIZE_ERROR);
-      size_ = (std::size_t)temp_size;
+      MARISA_THROW_IF(temp_size > SIZE_MAX, MARISA_SIZE_ERROR);
+      size_ = static_cast<std::size_t>(temp_size);
     }
   }
 
@@ -163,16 +167,16 @@ class FlatVector {
     {
       UInt64 temp_size;
       reader.read(&temp_size);
-      MARISA_THROW_IF(temp_size > MARISA_SIZE_MAX, MARISA_SIZE_ERROR);
-      size_ = (std::size_t)temp_size;
+      MARISA_THROW_IF(temp_size > SIZE_MAX, MARISA_SIZE_ERROR);
+      size_ = static_cast<std::size_t>(temp_size);
     }
   }
 
   void write_(Writer &writer) const {
     units_.write(writer);
-    writer.write((UInt32)value_size_);
-    writer.write((UInt32)mask_);
-    writer.write((UInt64)size_);
+    writer.write(static_cast<UInt32>(value_size_));
+    writer.write(static_cast<UInt32>(mask_));
+    writer.write(static_cast<UInt64>(size_));
   }
 
   void set(std::size_t i, UInt32 value) {
@@ -183,23 +187,17 @@ class FlatVector {
     const std::size_t unit_id = pos / MARISA_WORD_SIZE;
     const std::size_t unit_offset = pos % MARISA_WORD_SIZE;
 
-    units_[unit_id] &= ~((Unit)mask_ << unit_offset);
-    units_[unit_id] |= (Unit)(value & mask_) << unit_offset;
+    units_[unit_id] &= ~(static_cast<Unit>(mask_) << unit_offset);
+    units_[unit_id] |= static_cast<Unit>(value & mask_) << unit_offset;
     if ((unit_offset + value_size_) > MARISA_WORD_SIZE) {
       units_[unit_id + 1] &=
-          ~((Unit)mask_ >> (MARISA_WORD_SIZE - unit_offset));
+          ~(static_cast<Unit>(mask_) >> (MARISA_WORD_SIZE - unit_offset));
       units_[unit_id + 1] |=
-          (Unit)(value & mask_) >> (MARISA_WORD_SIZE - unit_offset);
+          static_cast<Unit>(value & mask_) >> (MARISA_WORD_SIZE - unit_offset);
     }
   }
-
-  // Disallows copy and assignment.
-  FlatVector(const FlatVector &);
-  FlatVector &operator=(const FlatVector &);
 };
 
-}  // namespace vector
-}  // namespace grimoire
-}  // namespace marisa
+}  // namespace marisa::grimoire::vector
 
 #endif  // MARISA_GRIMOIRE_VECTOR_FLAT_VECTOR_H_

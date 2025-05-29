@@ -1,11 +1,11 @@
+#include <marisa.h>
+
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <string>
 #include <random>
+#include <string>
 #include <vector>
-
-#include <marisa.h>
 
 #include "marisa-assert.h"
 
@@ -14,39 +14,16 @@ namespace {
 std::random_device seed_gen;
 std::mt19937 random_engine(seed_gen());
 
-void TestTypes() {
-  TEST_START();
-
-  ASSERT(sizeof(marisa_uint8) == 1);
-  ASSERT(sizeof(marisa_uint16) == 2);
-  ASSERT(sizeof(marisa_uint32) == 4);
-  ASSERT(sizeof(marisa_uint64) == 8);
-
-  ASSERT(MARISA_WORD_SIZE == (sizeof(std::size_t) * 8));
-
-  ASSERT(MARISA_UINT8_MAX == 0xFFU);
-  ASSERT(MARISA_UINT16_MAX == 0xFFFFU);
-  ASSERT(MARISA_UINT32_MAX == 0xFFFFFFFFU);
-  ASSERT(MARISA_UINT64_MAX == 0xFFFFFFFFFFFFFFFFULL);
-
-  ASSERT(sizeof(marisa::UInt8) == 1);
-  ASSERT(sizeof(marisa::UInt16) == 2);
-  ASSERT(sizeof(marisa::UInt32) == 4);
-  ASSERT(sizeof(marisa::UInt64) == 8);
-
-  TEST_END();
-}
-
 void TestSwap() {
   TEST_START();
 
   int x = 100, y = 200;
-  marisa::swap(x, y);
+  std::swap(x, y);
   ASSERT(x == 200);
   ASSERT(y == 100);
 
   double a = 1.23, b = 2.34;
-  marisa::swap(a, b);
+  std::swap(a, b);
   ASSERT(a == 2.34);
   ASSERT(b == 1.23);
 
@@ -62,7 +39,7 @@ void TestException() {
     ASSERT(std::strcmp(ex.filename(), __FILE__) == 0);
     ASSERT(ex.line() == (__LINE__ - 3));
     ASSERT(ex.error_code() == MARISA_OK);
-    ASSERT(std::strstr(ex.error_message(), "Message") != NULL);
+    ASSERT(std::strstr(ex.error_message(), "Message") != nullptr);
   }
 
   EXCEPT(MARISA_THROW(MARISA_OK, "OK"), MARISA_OK);
@@ -74,11 +51,11 @@ void TestException() {
 void TestKey() {
   TEST_START();
 
-  const char * const str = "apple";
+  const char *const str = "apple";
 
   marisa::Key key;
 
-  ASSERT(key.ptr() == NULL);
+  ASSERT(key.ptr() == nullptr);
   ASSERT(key.length() == 0);
 
   key.set_str(str);
@@ -91,7 +68,6 @@ void TestKey() {
   ASSERT(key.ptr() == str);
   ASSERT(key.length() == 4);
 
-#if __cplusplus >= 201703L
   const std::string_view view = "orange";
   key.set_str(view);
 
@@ -100,11 +76,10 @@ void TestKey() {
 
   // Compare string_view, emphasizing that it is not a pointer comparison.
   ASSERT(key.str() == std::string("orange"));
-#endif  // __cplusplus >= 201703L
 
   key.set_weight(1.0);
 
-  ASSERT(key.weight() == 1.0);
+  ASSERT(key.weight() == 1.0F);
 
   key.set_id(100);
 
@@ -137,12 +112,11 @@ void TestKeyset() {
     ASSERT(keyset.total_length() == total_length);
 
     ASSERT(keyset[i].length() == keys[i].length());
-    ASSERT(std::memcmp(keyset[i].ptr(), keys[i].c_str(),
-        keyset[i].length()) == 0);
-    ASSERT(keyset[i].weight() == 1.0);
+    ASSERT(std::memcmp(keyset[i].ptr(), keys[i].c_str(), keyset[i].length()) ==
+           0);
+    ASSERT(keyset[i].weight() == 1.0F);
   }
 
-#if __cplusplus >= 201703L
   keyset.clear();
   total_length = 0;
   // Same thing again, but now via string_view, and with a weight.
@@ -156,12 +130,11 @@ void TestKeyset() {
 
     ASSERT(keyset[i].length() == keys[i].length());
     ASSERT(keyset[i].str().length() == keys[i].length());
-    ASSERT(std::memcmp(keyset[i].ptr(), keys[i].c_str(),
-        keyset[i].length()) == 0);
+    ASSERT(std::memcmp(keyset[i].ptr(), keys[i].c_str(), keyset[i].length()) ==
+           0);
     ASSERT(keyset[i].str() == keys[i]);
-    ASSERT(keyset[i].weight() == 2.0);
+    ASSERT(keyset[i].weight() == 2.0F);
   }
-#endif  // __cplusplus >= 201703L
 
   keyset.clear();
 
@@ -201,7 +174,7 @@ void TestKeyset() {
       keys[i][j] = static_cast<char>(random_engine() & 0xFF);
     }
     double weight = 100.0 * static_cast<double>(random_engine()) /
-    	  static_cast<double>(RAND_MAX);
+                    static_cast<double>(RAND_MAX);
     weights[i] = static_cast<float>(weight);
 
     keyset.push_back(keys[i].c_str(), keys[i].length(), weights[i]);
@@ -212,8 +185,8 @@ void TestKeyset() {
   ASSERT(keyset.size() == keys.size());
   for (std::size_t i = 0; i < keys.size(); ++i) {
     ASSERT(keyset[i].length() == keys[i].length());
-    ASSERT(std::memcmp(keyset[i].ptr(), keys[i].c_str(),
-        keyset[i].length()) == 0);
+    ASSERT(std::memcmp(keyset[i].ptr(), keys[i].c_str(), keyset[i].length()) ==
+           0);
     ASSERT(keyset[i].weight() == weights[i]);
   }
 
@@ -229,7 +202,7 @@ void TestKeyset() {
       keys[i][j] = static_cast<char>(random_engine() & 0xFF);
     }
     double weight = 100.0 * static_cast<double>(random_engine()) /
-        static_cast<double>(RAND_MAX);
+                    static_cast<double>(RAND_MAX);
     weights[i] = static_cast<float>(weight);
 
     keyset.push_back(keys[i].c_str(), keys[i].length(), weights[i]);
@@ -240,8 +213,8 @@ void TestKeyset() {
   ASSERT(keyset.size() == keys.size());
   for (std::size_t i = 0; i < keys.size(); ++i) {
     ASSERT(keyset[i].length() == keys[i].length());
-    ASSERT(std::memcmp(keyset[i].ptr(), keys[i].c_str(),
-        keyset[i].length()) == 0);
+    ASSERT(std::memcmp(keyset[i].ptr(), keys[i].c_str(), keyset[i].length()) ==
+           0);
     ASSERT(keyset[i].weight() == weights[i]);
   }
 
@@ -253,7 +226,7 @@ void TestQuery() {
 
   marisa::Query query;
 
-  ASSERT(query.ptr() == NULL);
+  ASSERT(query.ptr() == nullptr);
   ASSERT(query.length() == 0);
   ASSERT(query.id() == 0);
 
@@ -268,7 +241,6 @@ void TestQuery() {
   ASSERT(query.ptr() == str);
   ASSERT(query.length() == 3);
 
-#if __cplusplus >= 201703L
   const std::string_view view = "orange";
   query.set_str(view);
 
@@ -277,7 +249,6 @@ void TestQuery() {
 
   // Compare string_view, emphasizing that it is not a pointer comparison.
   ASSERT(query.str() == std::string("orange"));
-#endif  // __cplusplus >= 201703L
 
   query.set_id(100);
 
@@ -285,7 +256,7 @@ void TestQuery() {
 
   query.clear();
 
-  ASSERT(query.ptr() == NULL);
+  ASSERT(query.ptr() == nullptr);
   ASSERT(query.length() == 0);
   ASSERT(query.id() == 0);
 
@@ -297,11 +268,11 @@ void TestAgent() {
 
   marisa::Agent agent;
 
-  ASSERT(agent.query().ptr() == NULL);
+  ASSERT(agent.query().ptr() == nullptr);
   ASSERT(agent.query().length() == 0);
   ASSERT(agent.query().id() == 0);
 
-  ASSERT(agent.key().ptr() == NULL);
+  ASSERT(agent.key().ptr() == nullptr);
   ASSERT(agent.key().length() == 0);
 
   ASSERT(!agent.has_state());
@@ -322,7 +293,6 @@ void TestAgent() {
   ASSERT(agent.key().length() == std::strlen(key_str));
   ASSERT(agent.key().id() == 234);
 
-#if __cplusplus >= 201703L
   const std::string_view query_view = "query2";
   const std::string_view key_view = "key2";
 
@@ -337,7 +307,6 @@ void TestAgent() {
   ASSERT(agent.key().ptr() == key_view.data());
   ASSERT(agent.key().length() == 4);
   ASSERT(agent.key().str() == std::string("key2"));
-#endif  // __cplusplus >= 201703L
 
   agent.init_state();
 
@@ -347,11 +316,11 @@ void TestAgent() {
 
   agent.clear();
 
-  ASSERT(agent.query().ptr() == NULL);
+  ASSERT(agent.query().ptr() == nullptr);
   ASSERT(agent.query().length() == 0);
   ASSERT(agent.query().id() == 0);
 
-  ASSERT(agent.key().ptr() == NULL);
+  ASSERT(agent.key().ptr() == nullptr);
   ASSERT(agent.key().length() == 0);
 
   ASSERT(!agent.has_state());
@@ -362,7 +331,6 @@ void TestAgent() {
 }  // namespace
 
 int main() try {
-  TestTypes();
   TestSwap();
   TestException();
   TestKey();
@@ -372,6 +340,6 @@ int main() try {
 
   return 0;
 } catch (const marisa::Exception &ex) {
-  std::cerr << ex.what() << std::endl;
+  std::cerr << ex.what() << "\n";
   throw;
 }

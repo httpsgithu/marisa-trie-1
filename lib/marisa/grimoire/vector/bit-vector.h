@@ -4,20 +4,20 @@
 #include "marisa/grimoire/vector/rank-index.h"
 #include "marisa/grimoire/vector/vector.h"
 
-namespace marisa {
-namespace grimoire {
-namespace vector {
+namespace marisa::grimoire::vector {
 
 class BitVector {
  public:
 #if MARISA_WORD_SIZE == 64
-  typedef UInt64 Unit;
-#else  // MARISA_WORD_SIZE == 64
-  typedef UInt32 Unit;
+  using Unit = UInt64;
+#else   // MARISA_WORD_SIZE == 64
+  using Unit = UInt32;
 #endif  // MARISA_WORD_SIZE == 64
 
-  BitVector()
-      : units_(), size_(0), num_1s_(0), ranks_(), select0s_(), select1s_() {}
+  BitVector() = default;
+
+  BitVector(const BitVector &) = delete;
+  BitVector &operator=(const BitVector &) = delete;
 
   void build(bool enables_select0, bool enables_select1) {
     BitVector temp;
@@ -49,13 +49,12 @@ class BitVector {
   }
 
   void push_back(bool bit) {
-    MARISA_THROW_IF(size_ == MARISA_UINT32_MAX, MARISA_SIZE_ERROR);
+    MARISA_THROW_IF(size_ == UINT32_MAX, MARISA_SIZE_ERROR);
     if (size_ == (MARISA_WORD_SIZE * units_.size())) {
       units_.resize(units_.size() + (64 / MARISA_WORD_SIZE), 0);
     }
     if (bit) {
-      units_[size_ / MARISA_WORD_SIZE] |=
-          (Unit)1 << (size_ % MARISA_WORD_SIZE);
+      units_[size_ / MARISA_WORD_SIZE] |= Unit{1} << (size_ % MARISA_WORD_SIZE);
       ++num_1s_;
     }
     ++size_;
@@ -63,8 +62,8 @@ class BitVector {
 
   bool operator[](std::size_t i) const {
     MARISA_DEBUG_IF(i >= size_, MARISA_BOUND_ERROR);
-    return (units_[i / MARISA_WORD_SIZE]
-        & ((Unit)1 << (i % MARISA_WORD_SIZE))) != 0;
+    return (units_[i / MARISA_WORD_SIZE] &
+            (Unit{1} << (i % MARISA_WORD_SIZE))) != 0;
   }
 
   std::size_t rank0(std::size_t i) const {
@@ -91,21 +90,21 @@ class BitVector {
     return size_;
   }
   std::size_t total_size() const {
-    return units_.total_size() + ranks_.total_size()
-        + select0s_.total_size() + select1s_.total_size();
+    return units_.total_size() + ranks_.total_size() + select0s_.total_size() +
+           select1s_.total_size();
   }
   std::size_t io_size() const {
-    return units_.io_size() + (sizeof(UInt32) * 2) + ranks_.io_size()
-        + select0s_.io_size() + select1s_.io_size();
+    return units_.io_size() + (sizeof(UInt32) * 2) + ranks_.io_size() +
+           select0s_.io_size() + select1s_.io_size();
   }
 
-  void clear() {
+  void clear() noexcept {
     BitVector().swap(*this);
   }
-  void swap(BitVector &rhs) {
+  void swap(BitVector &rhs) noexcept {
     units_.swap(rhs.units_);
-    marisa::swap(size_, rhs.size_);
-    marisa::swap(num_1s_, rhs.num_1s_);
+    std::swap(size_, rhs.size_);
+    std::swap(num_1s_, rhs.num_1s_);
     ranks_.swap(rhs.ranks_);
     select0s_.swap(rhs.select0s_);
     select1s_.swap(rhs.select1s_);
@@ -113,14 +112,14 @@ class BitVector {
 
  private:
   Vector<Unit> units_;
-  std::size_t size_;
-  std::size_t num_1s_;
+  std::size_t size_ = 0;
+  std::size_t num_1s_ = 0;
   Vector<RankIndex> ranks_;
   Vector<UInt32> select0s_;
   Vector<UInt32> select1s_;
 
-  void build_index(const BitVector &bv,
-      bool enables_select0, bool enables_select1);
+  void build_index(const BitVector &bv, bool enables_select0,
+                   bool enables_select1);
 
   void map_(Mapper &mapper) {
     units_.map(mapper);
@@ -160,20 +159,14 @@ class BitVector {
 
   void write_(Writer &writer) const {
     units_.write(writer);
-    writer.write((UInt32)size_);
-    writer.write((UInt32)num_1s_);
+    writer.write(static_cast<UInt32>(size_));
+    writer.write(static_cast<UInt32>(num_1s_));
     ranks_.write(writer);
     select0s_.write(writer);
     select1s_.write(writer);
   }
-
-  // Disallows copy and assignment.
-  BitVector(const BitVector &);
-  BitVector &operator=(const BitVector &);
 };
 
-}  // namespace vector
-}  // namespace grimoire
-}  // namespace marisa
+}  // namespace marisa::grimoire::vector
 
 #endif  // MARISA_GRIMOIRE_VECTOR_BIT_VECTOR_H_

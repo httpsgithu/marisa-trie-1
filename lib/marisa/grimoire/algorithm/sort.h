@@ -3,9 +3,7 @@
 
 #include "marisa/base.h"
 
-namespace marisa {
-namespace grimoire {
-namespace algorithm {
+namespace marisa::grimoire::algorithm {
 namespace details {
 
 enum {
@@ -16,7 +14,7 @@ template <typename T>
 int get_label(const T &unit, std::size_t depth) {
   MARISA_DEBUG_IF(depth > unit.length(), MARISA_BOUND_ERROR);
 
-  return (depth < unit.length()) ? (int)(UInt8)unit[depth] : -1;
+  return (depth < unit.length()) ? int{static_cast<UInt8>(unit[depth])} : -1;
 }
 
 template <typename T>
@@ -46,7 +44,7 @@ int compare(const T &lhs, const T &rhs, std::size_t depth) {
       return 1;
     }
     if (lhs[i] != rhs[i]) {
-      return (UInt8)lhs[i] - (UInt8)rhs[i];
+      return static_cast<UInt8>(lhs[i]) - static_cast<UInt8>(rhs[i]);
     }
   }
   if (lhs.length() == rhs.length()) {
@@ -67,7 +65,7 @@ std::size_t insertion_sort(Iterator l, Iterator r, std::size_t depth) {
       if (result <= 0) {
         break;
       }
-      marisa::swap(*(j - 1), *j);
+      std::swap(*(j - 1), *j);
     }
     if (result != 0) {
       ++count;
@@ -88,13 +86,13 @@ std::size_t sort(Iterator l, Iterator r, std::size_t depth) {
     Iterator pivot_r = r;
 
     const int pivot = median(*l, *(l + (r - l) / 2), *(r - 1), depth);
-    for ( ; ; ) {
+    for (;;) {
       while (pl < pr) {
         const int label = get_label(*pl, depth);
         if (label > pivot) {
           break;
         } else if (label == pivot) {
-          marisa::swap(*pl, *pivot_l);
+          std::swap(*pl, *pivot_l);
           ++pivot_l;
         }
         ++pl;
@@ -104,20 +102,20 @@ std::size_t sort(Iterator l, Iterator r, std::size_t depth) {
         if (label < pivot) {
           break;
         } else if (label == pivot) {
-          marisa::swap(*pr, *--pivot_r);
+          std::swap(*pr, *--pivot_r);
         }
       }
       if (pl >= pr) {
         break;
       }
-      marisa::swap(*pl, *pr);
+      std::swap(*pl, *pr);
       ++pl;
     }
     while (pivot_l > l) {
-      marisa::swap(*--pivot_l, *--pl);
+      std::swap(*--pivot_l, *--pl);
     }
     while (pivot_r < r) {
-      marisa::swap(*pivot_r, *pr);
+      std::swap(*pivot_r, *pr);
       ++pivot_r;
       ++pr;
     }
@@ -189,8 +187,6 @@ std::size_t sort(Iterator begin, Iterator end) {
   return details::sort(begin, end, 0);
 }
 
-}  // namespace algorithm
-}  // namespace grimoire
-}  // namespace marisa
+}  // namespace marisa::grimoire::algorithm
 
 #endif  // MARISA_GRIMOIRE_ALGORITHM_SORT_H_
