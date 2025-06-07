@@ -1,90 +1,42 @@
-#include <cstdlib>
-#include <ctime>
-#include <random>
-#include <sstream>
-#include <string>
-#include <vector>
-
+#include <marisa/grimoire/vector.h>
 #include <marisa/grimoire/vector/pop-count.h>
 #include <marisa/grimoire/vector/rank-index.h>
-#include <marisa/grimoire/vector.h>
+
+#include <cstdlib>
+#include <ctime>
+#include <exception>
+#include <random>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 #include "marisa-assert.h"
 
 namespace {
 
+using marisa::grimoire::vector::popcount;
+
 std::random_device seed_gen;
 std::mt19937 random_engine(seed_gen());
 
 #if MARISA_WORD_SIZE == 64
-void TestPopCount() {
+void TestPopcount() {
   TEST_START();
 
-  {
-    marisa::grimoire::vector::PopCount count(0);
-    ASSERT(count.lo8() == 0);
-    ASSERT(count.lo16() == 0);
-    ASSERT(count.lo24() == 0);
-    ASSERT(count.lo32() == 0);
-    ASSERT(count.lo40() == 0);
-    ASSERT(count.lo48() == 0);
-    ASSERT(count.lo56() == 0);
-    ASSERT(count.lo64() == 0);
-  }
-
-  {
-    marisa::grimoire::vector::PopCount count(0xFFFFFFFFFFFFFFFFULL);
-    ASSERT(count.lo8() == 8);
-    ASSERT(count.lo16() == 16);
-    ASSERT(count.lo24() == 24);
-    ASSERT(count.lo32() == 32);
-    ASSERT(count.lo40() == 40);
-    ASSERT(count.lo48() == 48);
-    ASSERT(count.lo56() == 56);
-    ASSERT(count.lo64() == 64);
-  }
-
-  {
-    marisa::grimoire::vector::PopCount count(0xFF7F3F1F0F070301ULL);
-    ASSERT(count.lo8() == 1);
-    ASSERT(count.lo16() == 3);
-    ASSERT(count.lo24() == 6);
-    ASSERT(count.lo32() == 10);
-    ASSERT(count.lo40() == 15);
-    ASSERT(count.lo48() == 21);
-    ASSERT(count.lo56() == 28);
-    ASSERT(count.lo64() == 36);
-  }
+  ASSERT(popcount(0U) == 0);
+  ASSERT(popcount(~0ULL) == 64);
+  ASSERT(popcount(0xFF7F3F1F0F070301ULL) == 36);
 
   TEST_END();
 }
-#else  // MARISA_WORD_SIZE == 64
-void TestPopCount() {
+#else   // MARISA_WORD_SIZE == 64
+void TestPopcount() {
   TEST_START();
 
-  {
-    marisa::grimoire::vector::PopCount count(0);
-    ASSERT(count.lo8() == 0);
-    ASSERT(count.lo16() == 0);
-    ASSERT(count.lo24() == 0);
-    ASSERT(count.lo32() == 0);
-  }
-
-  {
-    marisa::grimoire::vector::PopCount count(0xFFFFFFFFU);
-    ASSERT(count.lo8() == 8);
-    ASSERT(count.lo16() == 16);
-    ASSERT(count.lo24() == 24);
-    ASSERT(count.lo32() == 32);
-  }
-
-  {
-    marisa::grimoire::vector::PopCount count(0xFF3F0F03U);
-    ASSERT(count.lo8() == 2);
-    ASSERT(count.lo16() == 6);
-    ASSERT(count.lo24() == 12);
-    ASSERT(count.lo32() == 20);
-  }
+  ASSERT(popcount(0U) == 0);
+  ASSERT(popcount(~0U) == 32);
+  ASSERT(popcount(0xFF3F0F03U) == 20);
 
   TEST_END();
 }
@@ -135,7 +87,7 @@ void TestVector() {
 
   marisa::grimoire::Vector<int> vec;
 
-  ASSERT(vec.max_size() == (MARISA_SIZE_MAX / sizeof(int)));
+  ASSERT(vec.max_size() == (SIZE_MAX / sizeof(int)));
   ASSERT(vec.size() == 0);
   ASSERT(vec.capacity() == 0);
   ASSERT(!vec.fixed());
@@ -146,21 +98,21 @@ void TestVector() {
   for (std::size_t i = 0; i < values.size(); ++i) {
     vec.push_back(values[i]);
     ASSERT(vec[i] == values[i]);
-    ASSERT(static_cast<const marisa::grimoire::Vector<int> &>(vec)[i]
-        == values[i]);
+    ASSERT(static_cast<const marisa::grimoire::Vector<int> &>(vec)[i] ==
+           values[i]);
   }
 
   ASSERT(vec.size() == values.size());
   ASSERT(vec.capacity() >= vec.size());
   ASSERT(!vec.empty());
   ASSERT(vec.total_size() == (sizeof(int) * values.size()));
-  ASSERT(vec.io_size() == sizeof(marisa::UInt64)
-      + ((sizeof(int) * values.size())));
+  ASSERT(vec.io_size() ==
+         sizeof(marisa::UInt64) + ((sizeof(int) * values.size())));
 
-  ASSERT(static_cast<const marisa::grimoire::Vector<int> &>(vec).front()
-      == values.front());
-  ASSERT(static_cast<const marisa::grimoire::Vector<int> &>(vec).back()
-      == values.back());
+  ASSERT(static_cast<const marisa::grimoire::Vector<int> &>(vec).front() ==
+         values.front());
+  ASSERT(static_cast<const marisa::grimoire::Vector<int> &>(vec).back() ==
+         values.back());
   ASSERT(vec.front() == values.front());
   ASSERT(vec.back() == values.back());
 
@@ -170,8 +122,8 @@ void TestVector() {
   ASSERT(vec.capacity() == vec.size());
   for (std::size_t i = 0; i < values.size(); ++i) {
     ASSERT(vec[i] == values[i]);
-    ASSERT(static_cast<const marisa::grimoire::Vector<int> &>(vec)[i]
-        == values[i]);
+    ASSERT(static_cast<const marisa::grimoire::Vector<int> &>(vec)[i] ==
+           values[i]);
   }
 
   {
@@ -194,12 +146,12 @@ void TestVector() {
     ASSERT(vec.fixed());
     ASSERT(!vec.empty());
     ASSERT(vec.total_size() == (sizeof(int) * values.size()));
-    ASSERT(vec.io_size() == sizeof(marisa::UInt64)
-        + ((sizeof(int) * values.size())));
+    ASSERT(vec.io_size() ==
+           sizeof(marisa::UInt64) + ((sizeof(int) * values.size())));
 
     for (std::size_t i = 0; i < values.size(); ++i) {
-      ASSERT(static_cast<const marisa::grimoire::Vector<int> &>(vec)[i]
-          == values[i]);
+      ASSERT(static_cast<const marisa::grimoire::Vector<int> &>(vec)[i] ==
+             values[i]);
     }
 
     vec.clear();
@@ -216,13 +168,13 @@ void TestVector() {
   ASSERT(!vec.fixed());
   ASSERT(!vec.empty());
   ASSERT(vec.total_size() == (sizeof(int) * values.size()));
-  ASSERT(vec.io_size() == sizeof(marisa::UInt64)
-      + ((sizeof(int) * values.size())));
+  ASSERT(vec.io_size() ==
+         sizeof(marisa::UInt64) + ((sizeof(int) * values.size())));
 
   for (std::size_t i = 0; i < values.size(); ++i) {
     ASSERT(vec[i] == values[i]);
-    ASSERT(static_cast<const marisa::grimoire::Vector<int> &>(vec)[i]
-        == values[i]);
+    ASSERT(static_cast<const marisa::grimoire::Vector<int> &>(vec)[i] ==
+           values[i]);
   }
 
   vec.clear();
@@ -238,14 +190,9 @@ void TestVector() {
   vec.resize(100);
   ASSERT(vec.capacity() == 100);
 
-  EXCEPT(vec.resize(MARISA_SIZE_MAX), MARISA_SIZE_ERROR);
-
   vec.fix();
   ASSERT(vec.fixed());
-  EXCEPT(vec.fix(), MARISA_STATE_ERROR);
-  EXCEPT(vec.push_back(0), MARISA_STATE_ERROR);
-  EXCEPT(vec.resize(0), MARISA_STATE_ERROR);
-  EXCEPT(vec.reserve(0), MARISA_STATE_ERROR);
+  EXCEPT(vec.fix(), std::logic_error);
 
   TEST_END();
 }
@@ -453,8 +400,7 @@ void TestBitVector() {
 }  // namespace
 
 int main() try {
-  TestPopCount();
-  TestPopCount();
+  TestPopcount();
   TestRankIndex();
 
   TestVector();
@@ -462,7 +408,7 @@ int main() try {
   TestBitVector();
 
   return 0;
-} catch (const marisa::Exception &ex) {
-  std::cerr << ex.what() << std::endl;
+} catch (const std::exception &ex) {
+  std::cerr << ex.what() << "\n";
   throw;
 }
