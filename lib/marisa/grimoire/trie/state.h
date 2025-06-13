@@ -1,40 +1,43 @@
 #ifndef MARISA_GRIMOIRE_TRIE_STATE_H_
 #define MARISA_GRIMOIRE_TRIE_STATE_H_
 
-#include "marisa/grimoire/vector.h"
+#include <cassert>
+#include <vector>
+
 #include "marisa/grimoire/trie/history.h"
 
-namespace marisa {
-namespace grimoire {
-namespace trie {
+namespace marisa::grimoire::trie {
 
 // A search agent has its internal state and the status codes are defined
 // below.
-typedef enum StatusCode {
+enum StatusCode {
   MARISA_READY_TO_ALL,
   MARISA_READY_TO_COMMON_PREFIX_SEARCH,
   MARISA_READY_TO_PREDICTIVE_SEARCH,
   MARISA_END_OF_COMMON_PREFIX_SEARCH,
   MARISA_END_OF_PREDICTIVE_SEARCH,
-} StatusCode;
+};
 
 class State {
  public:
-  State()
-      : key_buf_(), history_(), node_id_(0), query_pos_(0),
-        history_pos_(0), status_code_(MARISA_READY_TO_ALL) {}
+  State() = default;
+
+  State(const State &) = default;
+  State &operator=(const State &) = default;
+  State(State &&) noexcept = default;
+  State &operator=(State &&) noexcept = default;
 
   void set_node_id(std::size_t node_id) {
-    MARISA_DEBUG_IF(node_id > MARISA_UINT32_MAX, MARISA_SIZE_ERROR);
-    node_id_ = (UInt32)node_id;
+    assert(node_id <= UINT32_MAX);
+    node_id_ = static_cast<uint32_t>(node_id);
   }
   void set_query_pos(std::size_t query_pos) {
-    MARISA_DEBUG_IF(query_pos > MARISA_UINT32_MAX, MARISA_SIZE_ERROR);
-    query_pos_ = (UInt32)query_pos;
+    assert(query_pos <= UINT32_MAX);
+    query_pos_ = static_cast<uint32_t>(query_pos);
   }
   void set_history_pos(std::size_t history_pos) {
-    MARISA_DEBUG_IF(history_pos > MARISA_UINT32_MAX, MARISA_SIZE_ERROR);
-    history_pos_ = (UInt32)history_pos;
+    assert(history_pos <= UINT32_MAX);
+    history_pos_ = static_cast<uint32_t>(history_pos);
   }
   void set_status_code(StatusCode status_code) {
     status_code_ = status_code;
@@ -53,17 +56,17 @@ class State {
     return status_code_;
   }
 
-  const Vector<char> &key_buf() const {
+  const std::vector<char> &key_buf() const {
     return key_buf_;
   }
-  const Vector<History> &history() const {
+  const std::vector<History> &history() const {
     return history_;
   }
 
-  Vector<char> &key_buf() {
+  std::vector<char> &key_buf() {
     return key_buf_;
   }
-  Vector<History> &history() {
+  std::vector<History> &history() {
     return history_;
   }
 
@@ -98,20 +101,14 @@ class State {
   }
 
  private:
-  Vector<char> key_buf_;
-  Vector<History> history_;
-  UInt32 node_id_;
-  UInt32 query_pos_;
-  UInt32 history_pos_;
-  StatusCode status_code_;
-
-  // Disallows copy and assignment.
-  State(const State &);
-  State &operator=(const State &);
+  std::vector<char> key_buf_;
+  std::vector<History> history_;
+  uint32_t node_id_ = 0;
+  uint32_t query_pos_ = 0;
+  uint32_t history_pos_ = 0;
+  StatusCode status_code_ = MARISA_READY_TO_ALL;
 };
 
-}  // namespace trie
-}  // namespace grimoire
-}  // namespace marisa
+}  // namespace marisa::grimoire::trie
 
 #endif  // MARISA_GRIMOIRE_TRIE_STATE_H_

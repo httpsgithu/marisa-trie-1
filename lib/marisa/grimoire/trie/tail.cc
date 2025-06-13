@@ -1,21 +1,23 @@
-#include "marisa/grimoire/algorithm.h"
-#include "marisa/grimoire/trie/state.h"
 #include "marisa/grimoire/trie/tail.h"
 
-namespace marisa {
-namespace grimoire {
-namespace trie {
+#include <cassert>
+#include <stdexcept>
 
-Tail::Tail() : buf_(), end_flags_() {}
+#include "marisa/grimoire/algorithm/sort.h"
+#include "marisa/grimoire/trie/state.h"
 
-void Tail::build(Vector<Entry> &entries, Vector<UInt32> *offsets,
-    TailMode mode) {
-  MARISA_THROW_IF(offsets == NULL, MARISA_NULL_ERROR);
+namespace marisa::grimoire::trie {
+
+Tail::Tail() = default;
+
+void Tail::build(Vector<Entry> &entries, Vector<uint32_t> *offsets,
+                 TailMode mode) {
+  MARISA_THROW_IF(offsets == nullptr, std::invalid_argument);
 
   switch (mode) {
     case MARISA_TEXT_TAIL: {
       for (std::size_t i = 0; i < entries.size(); ++i) {
-        const char * const ptr = entries[i].ptr();
+        const char *const ptr = entries[i].ptr();
         const std::size_t length = entries[i].length();
         for (std::size_t j = 0; j < length; ++j) {
           if (ptr[j] == '\0') {
@@ -33,7 +35,7 @@ void Tail::build(Vector<Entry> &entries, Vector<UInt32> *offsets,
       break;
     }
     default: {
-      MARISA_THROW(MARISA_CODE_ERROR, "undefined tail mode");
+      MARISA_THROW(std::invalid_argument, "undefined tail mode");
     }
   }
 
@@ -59,7 +61,7 @@ void Tail::write(Writer &writer) const {
 }
 
 void Tail::restore(Agent &agent, std::size_t offset) const {
-  MARISA_DEBUG_IF(buf_.empty(), MARISA_STATE_ERROR);
+  assert(!buf_.empty());
 
   State &state = agent.state();
   if (end_flags_.empty()) {
@@ -74,13 +76,12 @@ void Tail::restore(Agent &agent, std::size_t offset) const {
 }
 
 bool Tail::match(Agent &agent, std::size_t offset) const {
-  MARISA_DEBUG_IF(buf_.empty(), MARISA_STATE_ERROR);
-  MARISA_DEBUG_IF(agent.state().query_pos() >= agent.query().length(),
-      MARISA_BOUND_ERROR);
+  assert(!buf_.empty());
+  assert(agent.state().query_pos() < agent.query().length());
 
   State &state = agent.state();
   if (end_flags_.empty()) {
-    const char * const ptr = &buf_[offset] - state.query_pos();
+    const char *const ptr = &buf_[offset] - state.query_pos();
     do {
       if (ptr[state.query_pos()] != agent.query()[state.query_pos()]) {
         return false;
@@ -91,22 +92,22 @@ bool Tail::match(Agent &agent, std::size_t offset) const {
       }
     } while (state.query_pos() < agent.query().length());
     return false;
-  } else {
-    do {
-      if (buf_[offset] != agent.query()[state.query_pos()]) {
-        return false;
-      }
-      state.set_query_pos(state.query_pos() + 1);
-      if (end_flags_[offset++]) {
-        return true;
-      }
-    } while (state.query_pos() < agent.query().length());
-    return false;
   }
+
+  do {
+    if (buf_[offset] != agent.query()[state.query_pos()]) {
+      return false;
+    }
+    state.set_query_pos(state.query_pos() + 1);
+    if (end_flags_[offset++]) {
+      return true;
+    }
+  } while (state.query_pos() < agent.query().length());
+  return false;
 }
 
 bool Tail::prefix_match(Agent &agent, std::size_t offset) const {
-  MARISA_DEBUG_IF(buf_.empty(), MARISA_STATE_ERROR);
+  assert(!buf_.empty());
 
   State &state = agent.state();
   if (end_flags_.empty()) {
@@ -126,58 +127,58 @@ bool Tail::prefix_match(Agent &agent, std::size_t offset) const {
       state.key_buf().push_back(*ptr);
     } while (*++ptr != '\0');
     return true;
-  } else {
-    do {
-      if (buf_[offset] != agent.query()[state.query_pos()]) {
-        return false;
-      }
-      state.key_buf().push_back(buf_[offset]);
-      state.set_query_pos(state.query_pos() + 1);
-      if (end_flags_[offset++]) {
-        return true;
-      }
-    } while (state.query_pos() < agent.query().length());
-    do {
-      state.key_buf().push_back(buf_[offset]);
-    } while (!end_flags_[offset++]);
-    return true;
   }
+
+  do {
+    if (buf_[offset] != agent.query()[state.query_pos()]) {
+      return false;
+    }
+    state.key_buf().push_back(buf_[offset]);
+    state.set_query_pos(state.query_pos() + 1);
+    if (end_flags_[offset++]) {
+      return true;
+    }
+  } while (state.query_pos() < agent.query().length());
+  do {
+    state.key_buf().push_back(buf_[offset]);
+  } while (!end_flags_[offset++]);
+  return true;
 }
 
-void Tail::clear() {
+void Tail::clear() noexcept {
   Tail().swap(*this);
 }
 
-void Tail::swap(Tail &rhs) {
+void Tail::swap(Tail &rhs) noexcept {
   buf_.swap(rhs.buf_);
   end_flags_.swap(rhs.end_flags_);
 }
 
-void Tail::build_(Vector<Entry> &entries, Vector<UInt32> *offsets,
-    TailMode mode) {
+void Tail::build_(Vector<Entry> &entries, Vector<uint32_t> *offsets,
+                  TailMode mode) {
   for (std::size_t i = 0; i < entries.size(); ++i) {
     entries[i].set_id(i);
   }
-  Algorithm().sort(entries.begin(), entries.end());
+  algorithm::sort(entries.begin(), entries.end());
 
-  Vector<UInt32> temp_offsets;
+  Vector<uint32_t> temp_offsets;
   temp_offsets.resize(entries.size(), 0);
 
   const Entry dummy;
   const Entry *last = &dummy;
   for (std::size_t i = entries.size(); i > 0; --i) {
     const Entry &current = entries[i - 1];
-    MARISA_THROW_IF(current.length() == 0, MARISA_RANGE_ERROR);
+    MARISA_THROW_IF(current.length() == 0, std::out_of_range);
     std::size_t match = 0;
     while ((match < current.length()) && (match < last->length()) &&
-        ((*last)[match] == current[match])) {
+           ((*last)[match] == current[match])) {
       ++match;
     }
     if ((match == current.length()) && (last->length() != 0)) {
-      temp_offsets[current.id()] = (UInt32)(
+      temp_offsets[current.id()] = static_cast<uint32_t>(
           temp_offsets[last->id()] + (last->length() - match));
     } else {
-      temp_offsets[current.id()] = (UInt32)buf_.size();
+      temp_offsets[current.id()] = static_cast<uint32_t>(buf_.size());
       for (std::size_t j = 1; j <= current.length(); ++j) {
         buf_.push_back(current[current.length() - j]);
       }
@@ -189,7 +190,7 @@ void Tail::build_(Vector<Entry> &entries, Vector<UInt32> *offsets,
         }
         end_flags_.push_back(true);
       }
-      MARISA_THROW_IF(buf_.size() > MARISA_UINT32_MAX, MARISA_SIZE_ERROR);
+      MARISA_THROW_IF(buf_.size() > UINT32_MAX, std::length_error);
     }
     last = &current;
   }
@@ -213,6 +214,4 @@ void Tail::write_(Writer &writer) const {
   end_flags_.write(writer);
 }
 
-}  // namespace trie
-}  // namespace grimoire
-}  // namespace marisa
+}  // namespace marisa::grimoire::trie
