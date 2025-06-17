@@ -1,27 +1,27 @@
 #ifndef MARISA_GRIMOIRE_TRIE_RANGE_H_
 #define MARISA_GRIMOIRE_TRIE_RANGE_H_
 
+#include <cassert>
+
 #include "marisa/base.h"
 
-namespace marisa {
-namespace grimoire {
-namespace trie {
+namespace marisa::grimoire::trie {
 
 class Range {
  public:
-  Range() : begin_(0), end_(0), key_pos_(0) {}
+  Range() = default;
 
   void set_begin(std::size_t begin) {
-    MARISA_DEBUG_IF(begin > MARISA_UINT32_MAX, MARISA_SIZE_ERROR);
-    begin_ = static_cast<UInt32>(begin);
+    assert(begin <= UINT32_MAX);
+    begin_ = static_cast<uint32_t>(begin);
   }
   void set_end(std::size_t end) {
-    MARISA_DEBUG_IF(end > MARISA_UINT32_MAX, MARISA_SIZE_ERROR);
-    end_ = static_cast<UInt32>(end);
+    assert(end <= UINT32_MAX);
+    end_ = static_cast<uint32_t>(end);
   }
   void set_key_pos(std::size_t key_pos) {
-    MARISA_DEBUG_IF(key_pos > MARISA_UINT32_MAX, MARISA_SIZE_ERROR);
-    key_pos_ = static_cast<UInt32>(key_pos);
+    assert(key_pos <= UINT32_MAX);
+    key_pos_ = static_cast<uint32_t>(key_pos);
   }
 
   std::size_t begin() const {
@@ -35,13 +35,13 @@ class Range {
   }
 
  private:
-  UInt32 begin_;
-  UInt32 end_;
-  UInt32 key_pos_;
+  uint32_t begin_ = 0;
+  uint32_t end_ = 0;
+  uint32_t key_pos_ = 0;
 };
 
 inline Range make_range(std::size_t begin, std::size_t end,
-    std::size_t key_pos) {
+                        std::size_t key_pos) {
   Range range;
   range.set_begin(begin);
   range.set_end(end);
@@ -51,7 +51,7 @@ inline Range make_range(std::size_t begin, std::size_t end,
 
 class WeightedRange {
  public:
-  WeightedRange() : range_(), weight_(0.0F) {}
+  WeightedRange() = default;
 
   void set_range(const Range &range) {
     range_ = range;
@@ -87,7 +87,7 @@ class WeightedRange {
 
  private:
   Range range_;
-  float weight_;
+  float weight_ = 0.0F;
 };
 
 inline bool operator<(const WeightedRange &lhs, const WeightedRange &rhs) {
@@ -99,7 +99,7 @@ inline bool operator>(const WeightedRange &lhs, const WeightedRange &rhs) {
 }
 
 inline WeightedRange make_weighted_range(std::size_t begin, std::size_t end,
-    std::size_t key_pos, float weight) {
+                                         std::size_t key_pos, float weight) {
   WeightedRange range;
   range.set_begin(begin);
   range.set_end(end);
@@ -108,8 +108,6 @@ inline WeightedRange make_weighted_range(std::size_t begin, std::size_t end,
   return range;
 }
 
-}  // namespace trie
-}  // namespace grimoire
-}  // namespace marisa
+}  // namespace marisa::grimoire::trie
 
 #endif  // MARISA_GRIMOIRE_TRIE_RANGE_H_

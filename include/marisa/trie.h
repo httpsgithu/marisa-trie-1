@@ -3,17 +3,15 @@
 
 #include <memory>
 
-#include "marisa/keyset.h"
-#include "marisa/agent.h"
+#include "marisa/agent.h"   // IWYU pragma: export
+#include "marisa/keyset.h"  // IWYU pragma: export
 
 namespace marisa {
-namespace grimoire {
-namespace trie {
+namespace grimoire::trie {
 
 class LoudsTrie;
 
-}  // namespace trie
-}  // namespace grimoire
+}  // namespace grimoire::trie
 
 class Trie {
   friend class TrieIO;
@@ -22,9 +20,15 @@ class Trie {
   Trie();
   ~Trie();
 
+  Trie(const Trie &) = delete;
+  Trie &operator=(const Trie &) = delete;
+
+  Trie(Trie &&) noexcept;
+  Trie &operator=(Trie &&) noexcept;
+
   void build(Keyset &keyset, int config_flags = 0);
 
-  void mmap(const char *filename);
+  void mmap(const char *filename, int flags = 0);
   void map(const void *ptr, std::size_t size);
 
   void load(const char *filename);
@@ -50,15 +54,11 @@ class Trie {
   std::size_t total_size() const;
   std::size_t io_size() const;
 
-  void clear();
-  void swap(Trie &rhs);
+  void clear() noexcept;
+  void swap(Trie &rhs) noexcept;
 
  private:
   std::unique_ptr<grimoire::trie::LoudsTrie> trie_;
-
-  // Disallows copy and assignment.
-  Trie(const Trie &);
-  Trie &operator=(const Trie &);
 };
 
 }  // namespace marisa
