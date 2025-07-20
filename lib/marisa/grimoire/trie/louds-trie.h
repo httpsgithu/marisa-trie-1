@@ -3,22 +3,23 @@
 
 #include <memory>
 
-#include "marisa/keyset.h"
 #include "marisa/agent.h"
-#include "marisa/grimoire/vector.h"
+#include "marisa/grimoire/trie/cache.h"
 #include "marisa/grimoire/trie/config.h"
 #include "marisa/grimoire/trie/key.h"
 #include "marisa/grimoire/trie/tail.h"
-#include "marisa/grimoire/trie/cache.h"
+#include "marisa/grimoire/vector.h"
+#include "marisa/keyset.h"
 
-namespace marisa {
-namespace grimoire {
-namespace trie {
+namespace marisa::grimoire::trie {
 
-class LoudsTrie  {
+class LoudsTrie {
  public:
   LoudsTrie();
   ~LoudsTrie();
+
+  LoudsTrie(const LoudsTrie &) = delete;
+  LoudsTrie &operator=(const LoudsTrie &) = delete;
 
   void build(Keyset &keyset, int flags);
 
@@ -60,43 +61,42 @@ class LoudsTrie  {
   std::size_t total_size() const;
   std::size_t io_size() const;
 
-  void clear();
-  void swap(LoudsTrie &rhs);
+  void clear() noexcept;
+  void swap(LoudsTrie &rhs) noexcept;
 
  private:
   BitVector louds_;
   BitVector terminal_flags_;
   BitVector link_flags_;
-  Vector<UInt8> bases_;
+  Vector<uint8_t> bases_;
   FlatVector extras_;
   Tail tail_;
   std::unique_ptr<LoudsTrie> next_trie_;
   Vector<Cache> cache_;
-  std::size_t cache_mask_;
-  std::size_t num_l1_nodes_;
+  std::size_t cache_mask_ = 0;
+  std::size_t num_l1_nodes_ = 0;
   Config config_;
   Mapper mapper_;
 
   void build_(Keyset &keyset, const Config &config);
 
   template <typename T>
-  void build_trie(Vector<T> &keys,
-      Vector<UInt32> *terminals, const Config &config, std::size_t trie_id);
+  void build_trie(Vector<T> &keys, Vector<uint32_t> *terminals,
+                  const Config &config, std::size_t trie_id);
   template <typename T>
-  void build_current_trie(Vector<T> &keys,
-      Vector<UInt32> *terminals, const Config &config, std::size_t trie_id);
+  void build_current_trie(Vector<T> &keys, Vector<uint32_t> *terminals,
+                          const Config &config, std::size_t trie_id);
   template <typename T>
-  void build_next_trie(Vector<T> &keys,
-      Vector<UInt32> *terminals, const Config &config, std::size_t trie_id);
+  void build_next_trie(Vector<T> &keys, Vector<uint32_t> *terminals,
+                       const Config &config, std::size_t trie_id);
   template <typename T>
   void build_terminals(const Vector<T> &keys,
-      Vector<UInt32> *terminals) const;
+                       Vector<uint32_t> *terminals) const;
 
   void reserve_cache(const Config &config, std::size_t trie_id,
-      std::size_t num_keys);
+                     std::size_t num_keys);
   template <typename T>
-  void cache(std::size_t parent, std::size_t child,
-      float weight, char label);
+  void cache(std::size_t parent, std::size_t child, float weight, char label);
   void fill_cache();
 
   void map_(Mapper &mapper);
@@ -118,19 +118,12 @@ class LoudsTrie  {
   inline std::size_t get_cache_id(std::size_t node_id) const;
 
   inline std::size_t get_link(std::size_t node_id) const;
-  inline std::size_t get_link(std::size_t node_id,
-      std::size_t link_id) const;
+  inline std::size_t get_link(std::size_t node_id, std::size_t link_id) const;
 
   inline std::size_t update_link_id(std::size_t link_id,
-      std::size_t node_id) const;
-
-  // Disallows copy and assignment.
-  LoudsTrie(const LoudsTrie &);
-  LoudsTrie &operator=(const LoudsTrie &);
+                                    std::size_t node_id) const;
 };
 
-}  // namespace trie
-}  // namespace grimoire
-}  // namespace marisa
+}  // namespace marisa::grimoire::trie
 
 #endif  // MARISA_GRIMOIRE_TRIE_LOUDS_TRIE_H_

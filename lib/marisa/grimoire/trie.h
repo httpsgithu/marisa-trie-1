@@ -1,16 +1,14 @@
 #ifndef MARISA_GRIMOIRE_TRIE_H_
 #define MARISA_GRIMOIRE_TRIE_H_
 
-#include "marisa/grimoire/trie/state.h"
 #include "marisa/grimoire/trie/louds-trie.h"
+#include "marisa/grimoire/trie/state.h"
 
-namespace marisa {
-namespace grimoire {
+namespace marisa::grimoire {
 
-using trie::State;
 using trie::LoudsTrie;
+using trie::State;
 
-}  // namespace grimoire
-}  // namespace marisa
+}  // namespace marisa::grimoire
 
 #endif  // MARISA_GRIMOIRE_TRIE_H_

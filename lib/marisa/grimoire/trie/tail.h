@@ -1,20 +1,22 @@
 #ifndef MARISA_GRIMOIRE_TRIE_TAIL_H_
 #define MARISA_GRIMOIRE_TRIE_TAIL_H_
 
-#include "marisa/agent.h"
-#include "marisa/grimoire/vector.h"
-#include "marisa/grimoire/trie/entry.h"
+#include <cassert>
 
-namespace marisa {
-namespace grimoire {
-namespace trie {
+#include "marisa/agent.h"
+#include "marisa/grimoire/trie/entry.h"
+#include "marisa/grimoire/vector.h"
+
+namespace marisa::grimoire::trie {
 
 class Tail {
  public:
   Tail();
 
-  void build(Vector<Entry> &entries, Vector<UInt32> *offsets,
-      TailMode mode);
+  Tail(const Tail &) = delete;
+  Tail &operator=(const Tail &) = delete;
+
+  void build(Vector<Entry> &entries, Vector<uint32_t> *offsets, TailMode mode);
 
   void map(Mapper &mapper);
   void read(Reader &reader);
@@ -25,7 +27,7 @@ class Tail {
   bool prefix_match(Agent &agent, std::size_t offset) const;
 
   const char &operator[](std::size_t offset) const {
-    MARISA_DEBUG_IF(offset >= buf_.size(), MARISA_BOUND_ERROR);
+    assert(offset < buf_.size());
     return buf_[offset];
   }
 
@@ -46,27 +48,20 @@ class Tail {
     return buf_.io_size() + end_flags_.io_size();
   }
 
-  void clear();
-  void swap(Tail &rhs);
+  void clear() noexcept;
+  void swap(Tail &rhs) noexcept;
 
  private:
   Vector<char> buf_;
   BitVector end_flags_;
 
-  void build_(Vector<Entry> &entries, Vector<UInt32> *offsets,
-      TailMode mode);
+  void build_(Vector<Entry> &entries, Vector<uint32_t> *offsets, TailMode mode);
 
   void map_(Mapper &mapper);
   void read_(Reader &reader);
   void write_(Writer &writer) const;
-
-  // Disallows copy and assignment.
-  Tail(const Tail &);
-  Tail &operator=(const Tail &);
 };
 
-}  // namespace trie
-}  // namespace grimoire
-}  // namespace marisa
+}  // namespace marisa::grimoire::trie
 
 #endif  // MARISA_GRIMOIRE_TRIE_TAIL_H_

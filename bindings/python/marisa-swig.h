@@ -144,7 +144,7 @@ class Trie {
 
   void build(Keyset &keyset, int config_flags = 0);
 
-  void mmap(const char *filename);
+  void mmap(const char *filename, int flags = 0);
   void load(const char *filename);
   void save(const char *filename) const;
 
